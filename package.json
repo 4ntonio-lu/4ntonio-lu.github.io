@@ -1,15 +1,13 @@
 {
   "name": "portfolio",
-  "homepage": "https://4ntonio-lu.github.io/",
+  "homepage": "https://4ntonio-lu.github.io",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "build": "vite build --emptyOutDir",
     "preview": "vite preview",
-    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
