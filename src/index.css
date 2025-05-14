@@ -1,0 +1,139 @@
+/* Tailwind Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font Faces */
+@font-face {
+  font-family: W95FA;
+  src: url('./assets/fonts/W95FA.otf');
+}
+
+@font-face {
+  font-family: PixelTimesNewRoman;
+  src: url('./assets/fonts/pixelated-times-new-roman.ttf');
+}
+
+/* Base Styles */
+* {
+  font-family: 'W95FA', sans-serif;
+  cursor: url('./assets/images/cursor.png') 0 0, pointer;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  font-family: 'W95FA', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
+              'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 
+              'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image: url('./assets/images/background.png');
+  background-size: cover;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Element Styles */
+p, a, li {
+  font-family: 'W95FA', sans-serif;
+  color: #272727;
+  margin-bottom: 0;
+}
+
+button {
+  all: unset;
+}
+
+/* Component Classes */
+.button-shadow {
+  background-color: #C3C3C3;
+  border: 0.1rem solid;
+  border-color: #F7F7F7 #272727 #272727 #F7F7F7;
+  box-shadow: inset -0.1rem -0.1rem 0 #828282;
+}
+
+.button-shadow:active {
+  border-color: #272727 #F7F7F7 #F7F7F7 #272727;
+  box-shadow: inset 0.1rem 0.1rem 0 #828282;
+}
+
+/* React Tabs */
+.react-tabs__tab-list {
+  border-bottom: transparent;
+  margin-bottom: 0;
+}
+
+.react-tabs__tab {
+  color: #272727;
+  background: #C3C3C3;
+  border: 2px solid;
+  padding: 8px 20px;
+  border-top-color: #F7F7F7;
+  border-right-color: #272727;
+  border-left-color: #F7F7F7;
+  border-bottom: 1px solid #F7F7F7;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  box-shadow: inset 2px 0 #DFDFDF, inset -2px 0 #828282;
+}
+
+.react-tabs__tab--selected {
+  box-shadow: inset 0 -4px transparent, inset 2px 0 #DFDFDF, inset -2px 0 #828282;
+  position: relative;
+}
+
+.react-tabs__tab--selected::before {
+  content: '';
+  display: block;
+  width: 98%;
+  height: 5px;
+  position: absolute;
+  left: 1%;
+  bottom: -5px;
+  background: #C3C3C3;
+}
+
+.tab-panels {
+  border: 2px solid;
+  border-color: #F7F7F7 #272727 #272727 #F7F7F7;
+  box-shadow: inset 2px 2px #DFDFDF, inset -2px -2px #828282;
+  padding: 1.5rem;
+}
+
+/* Interactive States */
+a:hover, a:hover > *, 
+button:hover, button:hover > * {
+  cursor: url('./assets/images/cursor-click.png'), auto;
+}
+
+.react-tabs__tab:hover {
+  cursor: url('./assets/images/cursor-click.png') 0 0, pointer;
+}
+
+.react-tabs__tab:focus:after {
+  background: none;
+}
+
+/* Media Queries */
+@media (max-width: 1000px) {
+  body {
+    overflow: hidden;
+  }
+  
+  .tab-panels {
+    font-size: 1rem;
+    padding: 1rem;
+    max-height: 56vh;
+    overflow: scroll;
+  }
+}
+
+@media (max-width: 600px) {
+  .react-tabs__tab-list {
+    font-size: 0.85rem;
+  }
+}

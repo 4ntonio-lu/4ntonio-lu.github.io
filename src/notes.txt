@@ -1,0 +1,23 @@
+Todos
+v1
+- Setup github pages
+- Replace resume in assets, linkedin, indeed, and other places
+- PUBLISH!!!!! LFGGGG
+
+v2
+- Add in bitcoin
+- Fix price not updating on current bitcoin
+- Change portfolio description
+
+v3
+- Add in stock market
+- Change portfolio description
+
+v4
+- Add in deepseek
+- Add in extra prompting/training to personalize AI to be "my assistant"
+- Change portfolio description
+
+v5
+- Add in weather?
+- Change portfolio description
