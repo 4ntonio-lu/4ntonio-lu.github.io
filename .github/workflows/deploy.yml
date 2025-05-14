@@ -29,7 +29,7 @@ jobs:
           publish_dir: ./dist
           publish_branch: main
           enable_jekyll: false
-          cname: 4ntonio-lu.github.io          cname: 4ntonio-lu.github.io
+          cname: 4ntonio-lu.github.io
 =======
 permissions:
   contents: write
