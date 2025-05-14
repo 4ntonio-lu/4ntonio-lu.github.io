@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { JSX } from 'react';
 
 type NavIconLinkProps = {
@@ -9,9 +8,9 @@ type NavIconLinkProps = {
 
 function NavIconLink({ icon, to, alt }: NavIconLinkProps): JSX.Element {
   return (
-    <Link to={to} target="_blank" className="w-full flex justify-center">
-      <img src={icon} alt={alt} className="w-[1.65rem]" />
-    </Link>
+    <a href={to} target="_blank" className="w-full flex justify-center">
+      <img src={icon} alt={alt} className="w-[1.65rem]"/>
+    </a>
   );
 }
 
