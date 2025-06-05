@@ -11,7 +11,7 @@ function WindowHeader({ header }: { header: string }): JSX.Element {
         <button onClick={() => navigate('/')} className='button-shadow text-[0.75rem] font-extrabold pr-[1px] mx-[0.15rem]'>
           <img src={img.minimize} alt="Minimize" className='w-[0.85rem] p-[0.15rem] h-auto'/>
         </button>
-        <button className='button-shadow text-[0.75rem] font-extrabold pr-[1px] mx-[0.15rem]'>
+        <button className='button-shadow text-[0.75rem] font-extrabold pr-[1px] mx-[0.15rem] pointer-events-none cursor-not-allowed'>
           <img src={img.maximize} alt="Maximize" className='w-[0.85rem] p-[0.15rem] h-auto'/>
         </button>
         <button onClick={() => navigate('/')} className='button-shadow text-[0.75rem] font-extrabold pr-[1px] mx-[0.15rem]'>

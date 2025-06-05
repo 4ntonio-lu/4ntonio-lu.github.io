@@ -15,7 +15,7 @@ function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element {
   const { windowHeight, windowWidth } = useWindowDimensions();
 
   const dragDisabled = windowWidth <= 1000;
-  const defaultPos = dragDisabled ? { x: 0, y: 0 } : { x: windowWidth * (0.5 - width / 2), y: 50 };
+  const defaultPos = dragDisabled ? { x: 0, y: 0 } : { x: windowWidth * (0.5 - width / 2), y: 30 };
   const dragBounds = {
     top: 0,
     left: 0,
