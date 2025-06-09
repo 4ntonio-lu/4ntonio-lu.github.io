@@ -6,29 +6,35 @@ import About from './components/modules/About';
 import Resume from './components/modules/Resume';
 import Experiences from './components/modules/Experiences';
 import Projects from './components/modules/Projects';
+import Crypto from './components/modules/Crypto';
 import { img } from './assets/images/img';
 
 const routes = [
   {
     name: 'About',
     path: '/about',
-    icon: img.about,
+    icon: img.about
   },
   {
     name: 'Resume',
     path: '/resume',
-    icon: img.resume,
+    icon: img.resume
   },
   {
     name: 'Experiences',
     path: '/experiences',
-    icon: img.experiences,
+    icon: img.experiences
   },
   {
     name: 'Projects',
     path: '/projects',
-    icon: img.projects,
+    icon: img.projects
   },
+  {
+    name: 'Crypto',
+    path: '/crypto',
+    icon: img.crypto
+  }
 ];
 
 function App() {
@@ -48,6 +54,7 @@ function App() {
         <Route path="/resume" element={<Resume/>} />
         <Route path="/experiences" element={<Experiences/>} />
         <Route path="/projects" element={<Projects/>} />
+        <Route path="/crypto" element={<Crypto/>} />
       </Routes>
     </>
   );

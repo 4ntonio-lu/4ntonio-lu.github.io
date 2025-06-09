@@ -23,7 +23,7 @@ const projects: Project[] = [
         description: [
             "Developed a nostalgic Windows 95 themed portfolio website using TypeScript, ReactJS, and Tailwind CSS, recreating authentic UI elements including draggable windows, desktop icons, and system style dialog boxes to showcase my experiences and projects",
             "Engineered a fully responsive layout with mobile first principles using Tailwind CSS's utility classes and custom breakpoints, ensuring seamless usability across devices from smartphones to 4K monitors while maintaining the retro aesthetic",
-            // "Added live stock and crypto market prices application",
+            "Integrated a cryptocurrency dashboard into the portfolio, allowing users to explore current and historical price data for major coins through interactive charts, with a Cloudflare Worker proxy abstracting and securing API requests to CoinGecko",
             // "Added AI assistant to website"
         ]
     },
