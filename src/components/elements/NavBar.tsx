@@ -3,7 +3,7 @@ import { Navbar } from "react-bootstrap";
 import NavTabItem from "./NavTabItem";
 import NavIconLink from "./NavIconLink";
 import { img } from '../../assets/images/img';
-import resumePDF from "../../assets/documents/Antonio Lu Resume.pdf";
+import resumePDF from "/Antonio Lu Resume.pdf";
 
 type Route = {
     name: string;

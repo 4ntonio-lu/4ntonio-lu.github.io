@@ -1,6 +1,6 @@
 import { JSX } from "react";
 import WindowBox from "../elements/WindowBox";
-import resumePDF from "../../assets/documents/Antonio Lu Resume.pdf";
+import resumePDF from "/Antonio Lu Resume.pdf";
 
 function Resume(): JSX.Element {
     return (
