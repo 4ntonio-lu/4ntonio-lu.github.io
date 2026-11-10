@@ -82,7 +82,7 @@ button {
   box-shadow: inset -0.1rem -0.1rem 0 #828282;
 }
 
-.button-shadow:active {
+.button-shadow:active:not(:disabled) {
   border-color: #272727 #f7f7f7 #f7f7f7 #272727;
   box-shadow: inset 0.1rem 0.1rem 0 #828282;
 }
@@ -149,6 +149,31 @@ button:hover > * {
   cursor:
     url('./assets/images/cursor-click.png') 0 0,
     pointer;
+}
+
+button:disabled:hover,
+button:disabled:hover > * {
+  cursor:
+    url('./assets/images/cursor.png') 0 0,
+    default;
+}
+
+/* Win95 marks keyboard focus with a dotted rectangle, drawn inside bevelled buttons and tabs. */
+a:focus-visible,
+button:focus-visible,
+.react-tabs .react-tabs__tab:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 1px;
+}
+
+.button-shadow:focus-visible,
+.react-tabs .react-tabs__tab:focus-visible {
+  outline-offset: -5px;
+}
+
+.windowbox-header button:focus-visible {
+  outline-color: #fff;
+  outline-offset: 1px;
 }
 
 .react-tabs__tab:focus:after {

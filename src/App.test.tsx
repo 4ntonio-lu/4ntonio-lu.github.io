@@ -53,4 +53,29 @@ describe('App', () => {
 
     expect(screen.queryByRole('heading', { name: /I'm Antonio Lu/ })).not.toBeInTheDocument();
   });
+
+  it("disables the Maximize button, since windows can't be maximized yet", () => {
+    renderAt('/about');
+
+    expect(screen.getByRole('button', { name: 'Maximize' })).toBeDisabled();
+  });
+
+  it('names each desktop icon and taskbar button once', () => {
+    renderAt('/about');
+
+    // One link on the desktop and one on the taskbar, without the icon repeating the name.
+    expect(screen.getAllByRole('link', { name: 'Experiences' })).toHaveLength(2);
+  });
+
+  it('opens and closes the mobile Start menu', async () => {
+    renderAt('/about');
+    const start = screen.getByRole('button', { name: 'Start', expanded: false });
+
+    await userEvent.click(start);
+    expect(start).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getAllByRole('link', { name: 'Projects' })).toHaveLength(3);
+
+    await userEvent.click(start);
+    expect(start).toHaveAttribute('aria-expanded', 'false');
+  });
 });
