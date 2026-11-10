@@ -1,0 +1,53 @@
+{
+  "$schema": "./schemas/projects.schema.json",
+  "projects": [
+    {
+      "name": "Portfolio",
+      "image": "win95.png",
+      "start": "2025-02",
+      "end": "2025-05",
+      "skills": ["ReactJS", "TypeScript", "HTML", "Tailwind CSS"],
+      "bullets": [
+        "Developed a nostalgic Windows 95 themed portfolio website using TypeScript, ReactJS, and Tailwind CSS, recreating authentic UI elements including draggable windows, desktop icons, and system style dialog boxes to showcase my experiences and projects",
+        "Engineered a fully responsive layout with mobile first principles using Tailwind CSS's utility classes and custom breakpoints, ensuring seamless usability across devices from smartphones to 4K monitors while maintaining the retro aesthetic",
+        "Integrated a cryptocurrency dashboard into the portfolio, allowing users to explore current and historical price data for major coins through interactive charts, with a Cloudflare Worker proxy abstracting and securing API requests to CoinGecko"
+      ]
+    },
+    {
+      "name": "Ticket Tracker",
+      "image": "ticketTracker.png",
+      "start": "2023-12",
+      "end": "2024-03",
+      "skills": [
+        "C#",
+        "JavaScript",
+        "jQuery",
+        "AWS",
+        "PostgreSQL",
+        "Docker",
+        "ASP.NET MVC",
+        "HTML/CSS"
+      ],
+      "bullets": [
+        "Designed and implemented a C# ETL pipeline integrating the SeatGeek API to monitor and analyze ticket pricing data for 500+ concerts, performing data extraction, transformation, and loading into an AWS RDS PostgreSQL database for scalable storage and querying",
+        "Containerized the pipeline using Docker and AWS ECR, and deployed it via AWS Lambda to automate data retrieval every four hours, ensuring real time price tracking while optimizing cloud resource costs",
+        "Developed a dynamic ASP.NET MVC web application featuring intuitive dashboards by using Chart.js to visualize historical ticket price trends, enabling users to identify pricing patterns at a glance",
+        "Architected the solution using SOLID principles, Repository pattern, and Unit of Work pattern to decouple dependencies, improve testability, and maintain clean, scalable code across both the ETL pipeline and MVC application"
+      ]
+    },
+    {
+      "name": "Mind Kingdom",
+      "image": "mindKingdom.png",
+      "start": "2023-01",
+      "end": "2023-05",
+      "skills": ["Flutter", "Android Studio"],
+      "bullets": [
+        "Developed a gamified task management application using Flutter and Android Studio, designed to boost productivity and motivation through interactive features like kingdom building and streak tracking",
+        "Implemented a JSON based storage system to securely manage user data, task details, and preferences, ensuring offline accessibility and efficient state management",
+        "Integrated device calendar APIs for seamless task reminders and deadlines, alongside dynamic UI components for task creation, prioritization, and progress tracking",
+        "Leveraged Flutter’s widget-based architecture for a responsive and visually appealing interface, with features like drag and drop reordering, light/dark mode toggles, and dynamic stats pages",
+        "Collaborated in an Agile team to deliver features across sprints, addressing challenges in code optimization and workload distribution while maintaining focus on core functionality"
+      ]
+    }
+  ]
+}

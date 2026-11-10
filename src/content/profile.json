@@ -1,0 +1,26 @@
+{
+  "$schema": "./schemas/profile.schema.json",
+  "about": {
+    "heading": "Hello! I'm Antonio Lu — welcome to my portfolio website!",
+    "paragraphs": [
+      "This website was built with TypeScript, React, and Tailwind CSS, and is inspired by the nostalgic look and feel of Windows 95.",
+      "I'm a software engineer with a passion for building efficient, user-friendly applications and solving real-world problems with clean, maintainable code.",
+      "You can explore my resume, experiences, and personal projects through the interactive apps on this website.",
+      "It's still a work in progress, and I plan to roll out new features soon, so stay tuned!"
+    ],
+    "mobileNote": "For the best experience, access this website on your computer."
+  },
+  "links": [
+    {
+      "label": "LinkedIn",
+      "url": "https://www.linkedin.com/in/lu-antonio/",
+      "icon": "linkedin.png"
+    },
+    {
+      "label": "Mail",
+      "url": "mailto:antoniolu.swe@gmail.com",
+      "icon": "mail.png"
+    }
+  ],
+  "resumeFile": "Antonio Lu Resume.pdf"
+}

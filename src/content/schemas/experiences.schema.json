@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Path to the JSON Schema, for editor support.",
+      "type": "string"
+    },
+    "experiences": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "logo": {
+            "type": "string",
+            "pattern": "^[\\w.-]+\\.(png|jpe?g|gif|svg|webp)$",
+            "description": "File name of an image in src/assets/images."
+          },
+          "start": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "First month, as \"YYYY-MM\".",
+            "examples": [
+              "2024-05"
+            ]
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last month as \"YYYY-MM\", or null if it's ongoing (shown as \"Present\").",
+            "examples": [
+              "2024-09",
+              null
+            ]
+          },
+          "skills": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "bullets": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "company",
+          "role",
+          "location",
+          "logo",
+          "start",
+          "end",
+          "skills",
+          "bullets"
+        ],
+        "additionalProperties": false,
+        "defaultSnippets": [
+          {
+            "label": "New job",
+            "body": {
+              "company": "$1",
+              "role": "$2",
+              "location": "$3",
+              "logo": "$4",
+              "start": "$5",
+              "end": null,
+              "skills": [
+                "$6"
+              ],
+              "bullets": [
+                "$7"
+              ]
+            }
+          }
+        ]
+      },
+      "description": "Shown newest first, so the order here doesn't matter."
+    }
+  },
+  "required": [
+    "experiences"
+  ],
+  "additionalProperties": false
+}

@@ -19,6 +19,7 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "test": "vitest run",
     "test:watch": "vitest",
+    "content:schemas": "node scripts/content/generate-schemas.ts",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build",
     "worker:dev": "npm --prefix cloudflare-worker run dev",
     "worker:deploy": "npm --prefix cloudflare-worker run deploy"
@@ -56,6 +57,7 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.4.6",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "zod": "^4.6.7"
   }
 }

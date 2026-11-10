@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Path to the JSON Schema, for editor support.",
+      "type": "string"
+    },
+    "about": {
+      "type": "object",
+      "properties": {
+        "heading": {
+          "type": "string",
+          "minLength": 1
+        },
+        "paragraphs": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "mobileNote": {
+          "description": "Extra line shown on small screens.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "heading",
+        "paragraphs"
+      ],
+      "additionalProperties": false
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^(https?:\\/\\/|mailto:)\\S+$"
+          },
+          "icon": {
+            "type": "string",
+            "pattern": "^[\\w.-]+\\.(png|jpe?g|gif|svg|webp)$",
+            "description": "File name of an image in src/assets/images."
+          }
+        },
+        "required": [
+          "label",
+          "url",
+          "icon"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Shown as icons in the taskbar, in this order."
+    },
+    "resumeFile": {
+      "type": "string",
+      "pattern": "^[^/\\\\]+\\.pdf$",
+      "description": "File name of the resume PDF in public/."
+    }
+  },
+  "required": [
+    "about",
+    "links",
+    "resumeFile"
+  ],
+  "additionalProperties": false
+}

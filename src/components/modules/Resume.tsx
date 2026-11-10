@@ -1,6 +1,6 @@
 import { JSX } from 'react';
 import WindowBox from '../elements/WindowBox';
-import resumePDF from '/Antonio Lu Resume.pdf';
+import { resumeUrl } from '../../content';
 
 function Resume(): JSX.Element {
   return (
@@ -10,7 +10,7 @@ function Resume(): JSX.Element {
       content={
         <div className="window-content resume-content">
           <iframe
-            src={resumePDF}
+            src={resumeUrl}
             className="m-[2px] h-[80vh] w-full"
             onMouseDown={(e) => e.stopPropagation()}
             title="Resume PDF"

@@ -3,7 +3,7 @@ import { Navbar } from 'react-bootstrap';
 import NavTabItem from './NavTabItem';
 import NavIconLink from './NavIconLink';
 import { img } from '../../assets/images/img';
-import resumePDF from '/Antonio Lu Resume.pdf';
+import { contentImage, profile, resumeUrl } from '../../content';
 
 type Route = {
   name: string;
@@ -50,13 +50,15 @@ function NavBar({ routes }: { routes: Route[] }): JSX.Element {
         </button>
 
         <div className="mx-2 flex items-center gap-2 border-l-[0.15rem] border-r-[0.15rem] border-l-[#828282] border-r-[#D8D8D8] px-3 [box-shadow:inset_0.15rem_0_0_#D8D8D8,inset_-0.15rem_0_0_#828282]">
-          <NavIconLink
-            alt="LinkedIn"
-            icon={img.linkedin}
-            to="https://www.linkedin.com/in/lu-antonio/"
-          />
-          <NavIconLink alt="Mail" icon={img.mail} to="mailto:antoniolu.swe@gmail.com" />
-          <NavIconLink alt="Resume" icon={img.resume} to={resumePDF} />
+          {profile.links.map((link) => (
+            <NavIconLink
+              key={link.url}
+              alt={link.label}
+              icon={contentImage(link.icon)}
+              to={link.url}
+            />
+          ))}
+          <NavIconLink alt="Resume" icon={img.resume} to={resumeUrl} />
         </div>
 
         <div className="flex w-full min-w-0 items-center">
