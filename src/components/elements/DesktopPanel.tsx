@@ -1,5 +1,5 @@
-import { Navbar } from "react-bootstrap";
-import { JSX } from "react";
+import { Navbar } from 'react-bootstrap';
+import { JSX } from 'react';
 import DesktopIcon from './DesktopIcon';
 
 type Route = {
@@ -10,10 +10,10 @@ type Route = {
 
 function DesktopPanel({ routes }: { routes: Route[] }): JSX.Element {
   return (
-    <Navbar className="flex flex-col absolute top-0 mt-8 ml-8 gap-[2.25rem] max-md:hidden">
-      {routes.map((route, index) =>
-        <DesktopIcon key={index} name={route.name} to={route.path} icon={route.icon}/>
-      )}
+    <Navbar className="absolute top-0 ml-8 mt-8 flex flex-col gap-[2.25rem] max-md:hidden">
+      {routes.map((route, index) => (
+        <DesktopIcon key={index} name={route.name} to={route.path} icon={route.icon} />
+      ))}
     </Navbar>
   );
 }

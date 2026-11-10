@@ -1,5 +1,5 @@
-import { JSX } from "react";
-import InformationBox from "./InformationBox";
+import { JSX } from 'react';
+import InformationBox from './InformationBox';
 
 type ExperienceTabProps = {
   experience: {
@@ -16,16 +16,16 @@ type ExperienceTabProps = {
 function ExperienceTab({ experience }: ExperienceTabProps): JSX.Element {
   return (
     <>
-      <div className="flex justify-between gap-4 mb-4 max-md:flex-col max-md:items-center">
-        <div className="flex flex-col justify-center items-center gap-4 w-full md:w-[40%]">
+      <div className="mb-4 flex justify-between gap-4 max-md:flex-col max-md:items-center">
+        <div className="flex w-full flex-col items-center justify-center gap-4 md:w-[40%]">
           <img src={experience.icon} alt={experience.company} className="h-24" />
-          <div className="text-center flex flex-col gap-2 leading-4 mb-0">
-            <p style={{ fontWeight: "800" }}>{experience.role}</p>
+          <div className="mb-0 flex flex-col gap-2 text-center leading-4">
+            <p style={{ fontWeight: '800' }}>{experience.role}</p>
             <p>{experience.company}</p>
           </div>
         </div>
 
-        <div className="flex flex-col justify-center gap-2 w-full md:w-[60%]">
+        <div className="flex w-full flex-col justify-center gap-2 md:w-[60%]">
           <div className="flex gap-3">
             <InformationBox title="Location" classes="w-[40%]" content={experience.location} />
             <InformationBox title="Date" classes="w-[60%]" content={experience.date} />
@@ -35,12 +35,14 @@ function ExperienceTab({ experience }: ExperienceTabProps): JSX.Element {
       </div>
 
       <fieldset>
-        <legend className="text-[#272727] ml-2 px-1">Description</legend>
+        <legend className="ml-2 px-1 text-[#272727]">Description</legend>
         <div className="p-4">
-          <ul className="flex flex-col pl-4 gap-4">
-            {experience.description.map((desc, index) =>
-              <li key={index} className="leading-6">{desc}</li>
-            )}
+          <ul className="flex flex-col gap-4 pl-4">
+            {experience.description.map((desc, index) => (
+              <li key={index} className="leading-6">
+                {desc}
+              </li>
+            ))}
           </ul>
         </div>
       </fieldset>

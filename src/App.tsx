@@ -13,28 +13,28 @@ const routes = [
   {
     name: 'About',
     path: '/about',
-    icon: img.about
+    icon: img.about,
   },
   {
     name: 'Resume',
     path: '/resume',
-    icon: img.resume
+    icon: img.resume,
   },
   {
     name: 'Experiences',
     path: '/experiences',
-    icon: img.experiences
+    icon: img.experiences,
   },
   {
     name: 'Projects',
     path: '/projects',
-    icon: img.projects
+    icon: img.projects,
   },
   {
     name: 'Crypto',
     path: '/crypto',
-    icon: img.crypto
-  }
+    icon: img.crypto,
+  },
 ];
 
 function App() {
@@ -49,12 +49,12 @@ function App() {
       <NavBar routes={routes} />
 
       <Routes>
-        <Route path="/" element={initialLoad ? <Navigate to="/about" replace/> : null} />
-        <Route path="/about" element={<About/>} />
-        <Route path="/resume" element={<Resume/>} />
-        <Route path="/experiences" element={<Experiences/>} />
-        <Route path="/projects" element={<Projects/>} />
-        <Route path="/crypto" element={<Crypto/>} />
+        <Route path="/" element={initialLoad ? <Navigate to="/about" replace /> : null} />
+        <Route path="/about" element={<About />} />
+        <Route path="/resume" element={<Resume />} />
+        <Route path="/experiences" element={<Experiences />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/crypto" element={<Crypto />} />
       </Routes>
     </>
   );

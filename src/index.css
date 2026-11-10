@@ -17,16 +17,28 @@
 /* Base Styles */
 * {
   font-family: 'W95FA', sans-serif;
-  cursor: url('./assets/images/cursor.png') 0 0, pointer;
+  cursor:
+    url('./assets/images/cursor.png') 0 0,
+    pointer;
   padding: 0;
   margin: 0;
 }
 
 body {
   margin: 0;
-  font-family: 'W95FA', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 
-              'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 
-              'Helvetica Neue', sans-serif;
+  font-family:
+    'W95FA',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Roboto',
+    'Oxygen',
+    'Ubuntu',
+    'Cantarell',
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-image: url('./assets/images/background.png');
@@ -38,7 +50,9 @@ code {
 }
 
 /* Element Styles */
-p, a, li {
+p,
+a,
+li {
   font-family: 'W95FA', sans-serif;
   color: #272727;
   margin-bottom: 0;
@@ -50,14 +64,14 @@ button {
 
 /* Component Classes */
 .button-shadow {
-  background-color: #C3C3C3;
+  background-color: #c3c3c3;
   border: 0.1rem solid;
-  border-color: #F7F7F7 #272727 #272727 #F7F7F7;
+  border-color: #f7f7f7 #272727 #272727 #f7f7f7;
   box-shadow: inset -0.1rem -0.1rem 0 #828282;
 }
 
 .button-shadow:active {
-  border-color: #272727 #F7F7F7 #F7F7F7 #272727;
+  border-color: #272727 #f7f7f7 #f7f7f7 #272727;
   box-shadow: inset 0.1rem 0.1rem 0 #828282;
 }
 
@@ -69,20 +83,25 @@ button {
 
 .react-tabs__tab {
   color: #272727;
-  background: #C3C3C3;
+  background: #c3c3c3;
   border: 2px solid;
   padding: 8px 20px;
-  border-top-color: #F7F7F7;
+  border-top-color: #f7f7f7;
   border-right-color: #272727;
-  border-left-color: #F7F7F7;
-  border-bottom: 1px solid #F7F7F7;
+  border-left-color: #f7f7f7;
+  border-bottom: 1px solid #f7f7f7;
   border-top-left-radius: 5px;
   border-top-right-radius: 5px;
-  box-shadow: inset 2px 0 #DFDFDF, inset -2px 0 #828282;
+  box-shadow:
+    inset 2px 0 #dfdfdf,
+    inset -2px 0 #828282;
 }
 
 .react-tabs__tab--selected {
-  box-shadow: inset 0 -4px transparent, inset 2px 0 #DFDFDF, inset -2px 0 #828282;
+  box-shadow:
+    inset 0 -4px transparent,
+    inset 2px 0 #dfdfdf,
+    inset -2px 0 #828282;
   position: relative;
 }
 
@@ -94,24 +113,30 @@ button {
   position: absolute;
   left: 1%;
   bottom: -5px;
-  background: #C3C3C3;
+  background: #c3c3c3;
 }
 
 .tab-panels {
   border: 2px solid;
-  border-color: #F7F7F7 #272727 #272727 #F7F7F7;
-  box-shadow: inset 2px 2px #DFDFDF, inset -2px -2px #828282;
+  border-color: #f7f7f7 #272727 #272727 #f7f7f7;
+  box-shadow:
+    inset 2px 2px #dfdfdf,
+    inset -2px -2px #828282;
   padding: 1.5rem;
 }
 
 /* Interactive States */
-a:hover, a:hover > *, 
-button:hover, button:hover > * {
+a:hover,
+a:hover > *,
+button:hover,
+button:hover > * {
   cursor: url('./assets/images/cursor-click.png'), auto;
 }
 
 .react-tabs__tab:hover {
-  cursor: url('./assets/images/cursor-click.png') 0 0, pointer;
+  cursor:
+    url('./assets/images/cursor-click.png') 0 0,
+    pointer;
 }
 
 .react-tabs__tab:focus:after {
@@ -123,7 +148,7 @@ button:hover, button:hover > * {
   body {
     overflow: hidden;
   }
-  
+
   .tab-panels {
     font-size: 1rem;
     padding: 1rem;
