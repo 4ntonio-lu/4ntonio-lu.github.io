@@ -5,7 +5,7 @@ import { img } from '../../assets/images/img';
 function WindowHeader({ header }: { header: string }): JSX.Element {
   const navigate = useNavigate();
   return (
-    <div className="windowbox-header flex items-center justify-between overflow-auto bg-[#000082] p-[5px] pl-[10px]">
+    <div className="windowbox-header flex shrink-0 items-center justify-between overflow-auto bg-[#000082] p-[5px] pl-[10px]">
       <p className="m-0 text-[1.1rem] font-extrabold text-[#DBDBDB]">{header}</p>
       <div>
         <button

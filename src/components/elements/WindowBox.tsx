@@ -3,6 +3,9 @@ import Draggable from 'react-draggable';
 import WindowHeader from './WindowHeader';
 import useWindowDimensions from '../hooks/useWindowDimensions';
 
+// Matches Tailwind's `lg` breakpoint, where the `max-lg:` styles below stop applying.
+const LG_BREAKPOINT = 1024;
+
 type WindowBoxProps = {
   name: string;
   content: React.ReactNode;
@@ -14,8 +17,8 @@ function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element {
   const [containerHeight, setContainerHeight] = useState<number | null>(null);
   const { windowHeight, windowWidth } = useWindowDimensions();
 
-  const dragDisabled = windowWidth <= 1000;
-  const defaultPos = dragDisabled ? { x: 0, y: 0 } : { x: windowWidth * (0.5 - width / 2), y: 30 };
+  const isCompact = windowWidth < LG_BREAKPOINT;
+  const defaultPos = isCompact ? { x: 0, y: 0 } : { x: windowWidth * (0.5 - width / 2), y: 30 };
   const dragBounds = {
     top: 0,
     left: 0,
@@ -43,15 +46,15 @@ function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element {
       handle=".windowbox-header"
       defaultPosition={defaultPos}
       bounds={dragBounds}
-      disabled={dragDisabled}
+      disabled={isCompact}
     >
       <div
         ref={container}
-        style={{ width: windowWidth <= 1024 ? '95%' : `${width * 100}vw` }}
-        className={`!max-lg:w-[95%] !max-lg:mx-auto !max-lg:mb-[75px] absolute z-[1] bg-[#C3C3C3] p-[5px] shadow-[0.15rem_0.15rem_0_#272727,inset_0.15rem_0.15rem_0_#F7F7F7,inset_-0.15rem_-0.15rem_0_#828282] max-lg:absolute max-lg:left-0 max-lg:top-0`}
+        style={isCompact ? undefined : { width: `${width * 100}vw` }}
+        className="absolute z-[1] box-border bg-[#C3C3C3] p-[5px] shadow-[0.15rem_0.15rem_0_#272727,inset_0.15rem_0.15rem_0_#F7F7F7,inset_-0.15rem_-0.15rem_0_#828282] max-lg:left-[2.5%] max-lg:top-[2.5vw] max-lg:flex max-lg:max-h-[calc(100dvh-3.5rem-5vw)] max-lg:w-[95%] max-lg:flex-col"
       >
         <WindowHeader header={name} />
-        {content}
+        <div className="max-lg:min-h-0 max-lg:overflow-y-auto">{content}</div>
       </div>
     </Draggable>
   );

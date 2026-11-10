@@ -24,6 +24,10 @@
   margin: 0;
 }
 
+html {
+  background-color: #008080;
+}
+
 body {
   margin: 0;
   font-family:
@@ -41,8 +45,16 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: url('./assets/images/background.png');
-  background-size: cover;
+}
+
+/* Every window and icon is absolutely positioned, so the page itself has no height. A background
+   on body would be sized to that empty box and tile, so the wallpaper gets its own fixed layer. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #008080 url('./assets/images/wallpaper.webp') center / cover no-repeat;
 }
 
 code {
@@ -144,7 +156,7 @@ button:hover > * {
 }
 
 /* Media Queries */
-@media (max-width: 1000px) {
+@media (max-width: 1023px) {
   body {
     overflow: hidden;
   }
@@ -152,8 +164,6 @@ button:hover > * {
   .tab-panels {
     font-size: 1rem;
     padding: 1rem;
-    max-height: 56vh;
-    overflow: scroll;
   }
 }
 
