@@ -1,19 +1,20 @@
 # Antonio Lu — Windows 95 Portfolio
 
-My personal portfolio, built as a Windows 95 desktop. Open apps from the desktop icons or the
-taskbar to read about me, view my resume, browse my work experience and projects, and check live
-crypto prices.
+My personal portfolio, built as a Windows 95 desktop. Open apps from the desktop icons, the
+Start menu, or the taskbar to read about me, view my resume, browse my work experience and
+projects, and check live crypto prices.
 
 **Live site:** https://4ntonio-lu.github.io/
 
 ## Features
 
-- Windows 95 look and feel: draggable windows, desktop icons, taskbar with a clock, property-sheet
-  tabs, and the classic font and cursors.
+- Windows 95 desktop: several windows at once, dragging, minimize, maximize, and close, a
+  taskbar that lists only the open windows, and a Start menu. Click a desktop icon to select it
+  and double-click to open it.
 - Resume viewer, plus work experience and project details in tabbed windows.
 - Crypto dashboard with current prices and one-year charts from CoinGecko, served through a small
   Cloudflare Worker so the API key never reaches the browser.
-- Responsive layout with a mobile Start menu.
+- Responsive layout. On a phone, windows fill the screen and the Start menu launches apps.
 - All text, dates, and links live in JSON files that are checked at build time (see
   [Editing content](#editing-content)).
 
@@ -63,10 +64,14 @@ Then open http://localhost:5173.
 
 ```
 src/
-  App.tsx                 Routes and the list of desktop apps
+  App.tsx                 Desktop shell: icons, open windows, and the taskbar
+  desktop/
+    apps.ts               App titles, paths, and icons, in Start-menu order
+    appComponents.tsx     The React component for each app id
+    windowManager.ts      Open, focus, move, minimize, maximize, and close
   content/                Site text as JSON, plus the schema that validates it
   components/
-    elements/             Reusable pieces: windows, taskbar, desktop icons, tabs
+    elements/             Reusable pieces: window frame, clock, tabs
     modules/              One component per app window (About, Resume, ...)
     hooks/                Shared React hooks
   assets/                 Images, icons, and fonts
@@ -75,6 +80,15 @@ scripts/content/          Build-time content validation and JSON Schema generato
 public/                   Files served as-is (resume PDF, favicon)
 cloudflare-worker/        CoinGecko proxy (separate npm package)
 ```
+
+### Adding an app
+
+1. Create a module in `src/components/modules/` that renders `<WindowBox name="..." />`. The
+   `name` prop must match the app's `windowName`.
+2. Add an entry to [`src/desktop/apps.ts`](src/desktop/apps.ts) with its id, title, window name,
+   path, and icon. That list is the Start menu, the desktop icons, and the taskbar.
+3. Register the component in [`src/desktop/appComponents.tsx`](src/desktop/appComponents.tsx).
+   TypeScript fails the build if an id from `apps.ts` has no component.
 
 ## Editing content
 

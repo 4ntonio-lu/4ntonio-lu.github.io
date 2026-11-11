@@ -1,34 +1,63 @@
 import { JSX } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { img } from '../../assets/images/img';
 
-const captionButton = 'button-shadow pr-[1px] text-[0.75rem] font-extrabold';
-const captionGlyph = 'h-auto w-[0.85rem] p-[0.15rem]';
+const captionButton = 'caption-button button-shadow';
 
-function WindowHeader({ header }: { header: string }): JSX.Element {
-  const navigate = useNavigate();
-  // Each app's icon shares its window's name, for example about.png for "About".
-  const icon = img[header.toLowerCase()];
-
+function RestoreGlyph(): JSX.Element {
   return (
-    <div className="windowbox-header flex shrink-0 items-center justify-between overflow-auto bg-[#000082] p-[5px] pl-[6px]">
-      <div className="flex min-w-0 items-center gap-[6px]">
-        {icon && <img src={icon} alt="" className="h-[1.1rem] w-[1.1rem] shrink-0" />}
-        <p className="m-0 truncate text-[1.1rem] font-extrabold text-white">{header}</p>
+    <svg viewBox="0 0 12 11" aria-hidden="true">
+      <rect x="3" y="0" width="9" height="7" fill="none" stroke="#000" />
+      <rect x="0" y="3" width="9" height="8" fill="#c0c0c0" stroke="#000" />
+    </svg>
+  );
+}
+
+type WindowHeaderProps = {
+  title: string;
+  titleId: string;
+  icon?: string;
+  active: boolean;
+  maximized: boolean;
+  onMinimize: () => void;
+  onToggleMaximize: () => void;
+  onClose: () => void;
+};
+
+function WindowHeader({
+  title,
+  titleId,
+  icon,
+  active,
+  maximized,
+  onMinimize,
+  onToggleMaximize,
+  onClose,
+}: WindowHeaderProps): JSX.Element {
+  return (
+    <div
+      className={active ? 'win95-title' : 'win95-title is-inactive'}
+      onDoubleClick={onToggleMaximize}
+    >
+      <div className="win95-title-label">
+        {icon && <img src={icon} alt="" draggable={false} />}
+        <p id={titleId} className="win95-title-text">
+          {title}
+        </p>
       </div>
-      <div className="flex shrink-0 items-center">
-        <button onClick={() => navigate('/')} className={captionButton}>
-          <img src={img.minimize} alt="Minimize" className={captionGlyph} />
+      <div className="caption-buttons" onDoubleClick={(event) => event.stopPropagation()}>
+        <button type="button" className={captionButton} onClick={onMinimize}>
+          <img src={img.minimize} alt="Minimize" />
         </button>
-        <button disabled className={captionButton}>
-          <img
-            src={img.maximize}
-            alt="Maximize"
-            className={`${captionGlyph} [filter:invert(50%)_drop-shadow(1px_1px_0_#fff)]`}
-          />
+        <button
+          type="button"
+          className={captionButton}
+          aria-label={maximized ? 'Restore' : 'Maximize'}
+          onClick={onToggleMaximize}
+        >
+          {maximized ? <RestoreGlyph /> : <img src={img.maximize} alt="" />}
         </button>
-        <button onClick={() => navigate('/')} className={`${captionButton} ml-[0.2rem]`}>
-          <img src={img.close} alt="Close" className={captionGlyph} />
+        <button type="button" className={`${captionButton} close`} onClick={onClose}>
+          <img src={img.close} alt="Close" />
         </button>
       </div>
     </div>

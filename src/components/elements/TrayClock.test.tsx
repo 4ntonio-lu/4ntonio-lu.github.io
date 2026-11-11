@@ -10,17 +10,22 @@ describe('TrayClock', () => {
     vi.useRealTimers();
   });
 
-  it('shows hours and minutes, with the full date as a tooltip', () => {
+  const fullDate = new Date(2026, 10, 10).toLocaleDateString([], { dateStyle: 'full' });
+  const shortDate = new Date(2026, 10, 10).toLocaleDateString([], {
+    month: 'numeric',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+  it('shows the date next to the time, with the full date as a tooltip', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 10, 10, 8, 59, 30));
     render(<TrayClock />);
 
-    const clock = screen.getByText(shortTime(new Date(2026, 10, 10, 8, 59)));
+    const clock = screen.getByTitle(fullDate);
+    expect(clock).toHaveTextContent(shortDate);
+    expect(clock).toHaveTextContent(shortTime(new Date(2026, 10, 10, 8, 59)));
     expect(clock.textContent).not.toMatch(/\d+:\d+:\d+/);
-    expect(clock.closest('[title]')).toHaveAttribute(
-      'title',
-      new Date(2026, 10, 10).toLocaleDateString([], { dateStyle: 'full' }),
-    );
   });
 
   it('updates when the minute changes', () => {
@@ -29,12 +34,12 @@ describe('TrayClock', () => {
     render(<TrayClock />);
 
     act(() => vi.advanceTimersByTime(29_000));
-    expect(screen.getByText(shortTime(new Date(2026, 10, 10, 8, 59)))).toBeInTheDocument();
+    expect(screen.getByTitle(fullDate)).toHaveTextContent(shortTime(new Date(2026, 10, 10, 8, 59)));
 
     act(() => vi.advanceTimersByTime(1_000));
-    expect(screen.getByText(shortTime(new Date(2026, 10, 10, 9, 0)))).toBeInTheDocument();
+    expect(screen.getByTitle(fullDate)).toHaveTextContent(shortTime(new Date(2026, 10, 10, 9, 0)));
 
     act(() => vi.advanceTimersByTime(60_000));
-    expect(screen.getByText(shortTime(new Date(2026, 10, 10, 9, 1)))).toBeInTheDocument();
+    expect(screen.getByTitle(fullDate)).toHaveTextContent(shortTime(new Date(2026, 10, 10, 9, 1)));
   });
 });

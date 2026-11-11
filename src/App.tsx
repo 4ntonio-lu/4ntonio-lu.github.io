@@ -1,62 +1,42 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import NavBar from './components/elements/NavBar';
-import DesktopPanel from './components/elements/DesktopPanel';
-import About from './components/modules/About';
-import Resume from './components/modules/Resume';
-import Experiences from './components/modules/Experiences';
-import Projects from './components/modules/Projects';
-import Crypto from './components/modules/Crypto';
-import { img } from './assets/images/img';
+import { JSX } from 'react';
+import { appComponents } from './desktop/appComponents';
+import { apps } from './desktop/apps';
+import DesktopIcons from './desktop/DesktopIcons';
+import { DesktopProvider } from './desktop/DesktopProvider';
+import { useDesktop } from './desktop/useDesktop';
+import Taskbar from './desktop/Taskbar';
 
-const routes = [
-  {
-    name: 'About',
-    path: '/about',
-    icon: img.about,
-  },
-  {
-    name: 'Resume',
-    path: '/resume',
-    icon: img.resume,
-  },
-  {
-    name: 'Experiences',
-    path: '/experiences',
-    icon: img.experiences,
-  },
-  {
-    name: 'Projects',
-    path: '/projects',
-    icon: img.projects,
-  },
-  {
-    name: 'Crypto',
-    path: '/crypto',
-    icon: img.crypto,
-  },
-];
-
-function App() {
-  const [initialLoad, setInitialLoad] = useState(true);
-  useEffect(() => {
-    setInitialLoad(false);
-  }, []);
+function Desktop(): JSX.Element {
+  const { windows, dispatch } = useDesktop();
+  const openIds = new Set(windows.map((window) => window.id));
 
   return (
     <>
-      <DesktopPanel routes={routes} />
-      <NavBar routes={routes} />
-
-      <Routes>
-        <Route path="/" element={initialLoad ? <Navigate to="/about" replace /> : null} />
-        <Route path="/about" element={<About />} />
-        <Route path="/resume" element={<Resume />} />
-        <Route path="/experiences" element={<Experiences />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/crypto" element={<Crypto />} />
-      </Routes>
+      <div
+        className="desktop"
+        onMouseDown={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest('.desktop-icon, .win95-window')) return;
+          dispatch({ type: 'select', id: null });
+        }}
+      >
+        <DesktopIcons />
+        {apps.map((app) => {
+          if (!openIds.has(app.id)) return null;
+          const Component = appComponents[app.id];
+          return <Component key={app.id} />;
+        })}
+      </div>
+      <Taskbar />
     </>
+  );
+}
+
+function App(): JSX.Element {
+  return (
+    <DesktopProvider>
+      <Desktop />
+    </DesktopProvider>
   );
 }
 

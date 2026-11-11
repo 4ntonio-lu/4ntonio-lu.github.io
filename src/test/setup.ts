@@ -6,7 +6,7 @@ afterEach(() => {
   cleanup();
 });
 
-// jsdom has no ResizeObserver; WindowBox uses it to keep windows inside the viewport.
+// jsdom has no ResizeObserver. Components that measure themselves can rely on this stub.
 class ResizeObserverStub {
   observe() {}
   unobserve() {}

@@ -3,7 +3,7 @@ import WindowBox from '../elements/WindowBox';
 import { profile } from '../../content';
 
 function About(): JSX.Element {
-  const { heading, paragraphs, mobileNote } = profile.about;
+  const { heading, paragraphs } = profile.about;
   return (
     <WindowBox
       name="About"
@@ -17,12 +17,6 @@ function About(): JSX.Element {
               <h3>{paragraph}</h3>
             </Fragment>
           ))}
-          {mobileNote && (
-            <>
-              <br />
-              <h4 className="lg:hidden">{mobileNote}</h4>
-            </>
-          )}
         </div>
       }
     />

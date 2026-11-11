@@ -1,60 +1,74 @@
-import { useState, useEffect, useRef, JSX } from 'react';
+import { useRef, type JSX, type ReactNode, type RefObject } from 'react';
 import Draggable from 'react-draggable';
+import { appByWindowName } from '../../desktop/apps';
+import { useDesktop } from '../../desktop/useDesktop';
 import WindowHeader from './WindowHeader';
-import useWindowDimensions from '../hooks/useWindowDimensions';
-
-// Matches Tailwind's `lg` breakpoint, where the `max-lg:` styles below stop applying.
-const LG_BREAKPOINT = 1024;
 
 type WindowBoxProps = {
   name: string;
-  content: React.ReactNode;
+  content: ReactNode;
   width: number;
 };
 
-function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element {
-  const container = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState<number | null>(null);
-  const { windowHeight, windowWidth } = useWindowDimensions();
+function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element | null {
+  const { windows, focusedId, compact, run, dispatch } = useDesktop();
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const app = appByWindowName(name);
+  if (!app) {
+    throw new Error(
+      `No desktop app has windowName "${name}". Add it to src/desktop/apps.ts and src/desktop/appComponents.tsx.`,
+    );
+  }
 
-  const isCompact = windowWidth < LG_BREAKPOINT;
-  const defaultPos = isCompact ? { x: 0, y: 0 } : { x: windowWidth * (0.5 - width / 2), y: 30 };
-  const dragBounds = {
-    top: 0,
-    left: 0,
-    right: windowWidth * (1 - width - 0.006),
-    bottom: containerHeight !== null ? windowHeight - containerHeight - 65 : windowHeight,
+  const windowState = windows.find((item) => item.id === app.id);
+  if (!windowState) return null;
+
+  const fill = compact || windowState.maximized;
+  const active = focusedId === app.id;
+  const titleId = `window-title-${app.id}`;
+
+  const focus = () => {
+    if (focusedId !== app.id || windowState.minimized) run({ type: 'focus', id: app.id });
   };
-
-  useEffect(() => {
-    if (!container.current) return;
-
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerHeight(entry.contentRect.height);
-      }
-    });
-
-    observer.observe(container.current);
-
-    return () => observer.disconnect();
-  }, []);
 
   return (
     <Draggable
-      nodeRef={container as React.RefObject<HTMLElement>}
-      handle=".windowbox-header"
-      defaultPosition={defaultPos}
-      bounds={dragBounds}
-      disabled={isCompact}
+      nodeRef={nodeRef as RefObject<HTMLElement>}
+      handle=".win95-title"
+      cancel=".caption-buttons"
+      position={fill ? { x: 0, y: 0 } : { x: windowState.x, y: windowState.y }}
+      disabled={fill}
+      bounds="parent"
+      // react-draggable replaces the child's onMouseDown, so focus is passed here.
+      onMouseDown={focus}
+      onDrag={(_, data) => dispatch({ type: 'move', id: app.id, x: data.x, y: data.y })}
     >
       <div
-        ref={container}
-        style={isCompact ? undefined : { width: `${width * 100}vw` }}
-        className="absolute z-[1] box-border bg-[#C3C3C3] p-[5px] shadow-[0.15rem_0.15rem_0_#272727,inset_0.15rem_0.15rem_0_#F7F7F7,inset_-0.15rem_-0.15rem_0_#828282] max-lg:left-[2.5%] max-lg:top-[2.5vw] max-lg:flex max-lg:max-h-[calc(100dvh-3.5rem-5vw)] max-lg:w-[95%] max-lg:flex-col"
+        ref={nodeRef}
+        role="dialog"
+        aria-labelledby={titleId}
+        hidden={windowState.minimized}
+        data-maximized={windowState.maximized}
+        data-fill={fill}
+        className={fill ? 'win95-window window-fill' : 'win95-window'}
+        style={{
+          zIndex: windowState.z,
+          width: fill ? '100%' : `${width * 100}%`,
+          height: fill ? '100%' : undefined,
+          maxHeight: fill ? undefined : `calc(100% - ${windowState.y}px)`,
+        }}
       >
-        <WindowHeader header={name} />
-        <div className="max-lg:min-h-0 max-lg:overflow-y-auto">{content}</div>
+        <WindowHeader
+          title={name}
+          titleId={titleId}
+          icon={app.icon}
+          active={active}
+          maximized={windowState.maximized}
+          onMinimize={() => run({ type: 'minimize', id: app.id })}
+          onToggleMaximize={() => run({ type: 'toggleMaximize', id: app.id })}
+          onClose={() => run({ type: 'close', id: app.id })}
+        />
+        <div className="win95-body">{content}</div>
       </div>
     </Draggable>
   );

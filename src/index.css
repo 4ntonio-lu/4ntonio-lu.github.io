@@ -7,54 +7,66 @@
 @font-face {
   font-family: W95FA;
   src: url('./assets/fonts/W95FA.otf');
+  font-display: swap;
 }
 
 @font-face {
   font-family: PixelTimesNewRoman;
   src: url('./assets/fonts/pixelated-times-new-roman.ttf');
+  font-display: swap;
+}
+
+/* Win95 palette. The face, highlight, shadow, and navy are the system colors. */
+:root {
+  --win-face: #c0c0c0;
+  --win-light: #ffffff;
+  --win-mid: #dfdfdf;
+  --win-shadow: #808080;
+  --win-dark: #000000;
+  --win-navy: #000080;
+  --win-teal: #008080;
+  --win-inactive: #808080;
+  --taskbar-h: 36px;
 }
 
 /* Base Styles */
 * {
-  font-family: 'W95FA', sans-serif;
+  font-family: 'W95FA', 'MS Sans Serif', Tahoma, sans-serif;
   cursor:
     url('./assets/images/cursor.png') 0 0,
-    pointer;
+    default;
   padding: 0;
   margin: 0;
 }
 
 html {
-  background-color: #008080;
+  background-color: var(--win-teal);
+  height: 100%;
 }
 
 body {
+  height: 100%;
   margin: 0;
-  font-family:
-    'W95FA',
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    'Roboto',
-    'Oxygen',
-    'Ubuntu',
-    'Cantarell',
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  color: var(--win-dark);
+  font-family: 'W95FA', 'MS Sans Serif', Tahoma, sans-serif;
+  /* The bitmap font should stay crisp. Smoothing turns the pixels into gray mush. */
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: unset;
 }
 
-/* Every window and icon is absolutely positioned, so the page itself has no height. A background
-   on body would be sized to that empty box and tile, so the wallpaper gets its own fixed layer. */
+/* Every window and icon is positioned, so the page itself has no height. The wallpaper gets
+   its own fixed layer, with the classic teal showing through if the image is slow. */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: #008080 url('./assets/images/wallpaper.webp') center / cover no-repeat;
+  background: var(--win-teal) url('./assets/images/wallpaper.webp') center / cover no-repeat;
+}
+
+#root {
+  height: 100%;
 }
 
 code {
@@ -65,27 +77,377 @@ code {
 p,
 a,
 li {
-  font-family: 'W95FA', sans-serif;
+  font-family: 'W95FA', 'MS Sans Serif', Tahoma, sans-serif;
   color: #272727;
   margin-bottom: 0;
 }
 
 button {
   all: unset;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button,
+a,
+label {
+  cursor:
+    url('./assets/images/cursor.png') 0 0,
+    default;
 }
 
 /* Component Classes */
 .button-shadow {
-  background-color: #c3c3c3;
-  border: 0.1rem solid;
-  border-color: #f7f7f7 #272727 #272727 #f7f7f7;
-  box-shadow: inset -0.1rem -0.1rem 0 #828282;
+  background-color: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-light) var(--win-dark) var(--win-dark) var(--win-light);
+  box-shadow:
+    inset -1px -1px 0 var(--win-shadow),
+    inset 1px 1px 0 var(--win-mid);
 }
 
 .button-shadow:active:not(:disabled),
-.button-shadow[aria-pressed='true'] {
-  border-color: #272727 #f7f7f7 #f7f7f7 #272727;
-  box-shadow: inset 0.1rem 0.1rem 0 #828282;
+.button-shadow[aria-pressed='true'],
+.button-pressed {
+  border-color: var(--win-dark) var(--win-light) var(--win-light) var(--win-dark);
+  box-shadow: inset 1px 1px 0 var(--win-shadow);
+}
+
+.button-pressed > * {
+  transform: translate(1px, 1px);
+}
+
+/* Desktop */
+.desktop {
+  position: fixed;
+  inset: 0 0 var(--taskbar-h) 0;
+  overflow: hidden;
+}
+
+.desktop-icons {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.desktop-icon {
+  display: flex;
+  width: 76px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  color: #fff;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.desktop-icon img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.desktop-icon-label {
+  background: var(--win-teal);
+  color: #fff;
+  padding: 1px 3px;
+}
+
+/* Selected icon: navy label, and the dotted rectangle Win95 draws around it. */
+.desktop-icon[aria-pressed='true'] {
+  outline: 1px dotted #fff;
+  outline-offset: 2px;
+}
+
+.desktop-icon[aria-pressed='true'] .desktop-icon-label {
+  background: var(--win-navy);
+  color: #fff;
+}
+
+/* Windows */
+.win95-window {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  display: flex;
+  min-width: 260px;
+  flex-direction: column;
+  background: var(--win-face);
+  padding: 3px;
+  box-shadow:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px var(--win-shadow),
+    inset 2px 2px var(--win-mid);
+}
+
+.win95-window[hidden] {
+  display: none !important;
+}
+
+.win95-window.window-fill {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.win95-title {
+  display: flex;
+  height: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--win-navy);
+  padding: 2px 3px 2px 4px;
+  color: #fff;
+  user-select: none;
+}
+
+.win95-title.is-inactive {
+  background: var(--win-inactive);
+  color: var(--win-face);
+}
+
+.win95-title-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.win95-title-label img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.win95-title-text {
+  margin: 0;
+  overflow: hidden;
+  color: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caption-buttons {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.caption-button {
+  display: inline-flex;
+  width: 16px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  padding: 0;
+}
+
+.caption-button.close {
+  margin-left: 4px;
+}
+
+.caption-button img,
+.caption-button svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+
+.win95-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+}
+
+/* Taskbar */
+.taskbar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  display: flex;
+  height: var(--taskbar-h);
+  box-sizing: border-box;
+  align-items: center;
+  gap: 4px;
+  background: var(--win-face);
+  padding: 2px 3px;
+  box-shadow: inset 0 1px 0 var(--win-light);
+}
+
+.start-button {
+  display: flex;
+  height: calc(var(--taskbar-h) - 6px);
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 4px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.start-button img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.quick-launch {
+  display: flex;
+  height: calc(var(--taskbar-h) - 8px);
+  flex-shrink: 0;
+  align-items: center;
+  gap: 1px;
+  border: 1px solid;
+  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
+  padding: 0 3px;
+}
+
+.quick-launch a {
+  display: flex;
+  padding: 1px;
+  text-decoration: none;
+}
+
+.quick-launch img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.taskbar-windows {
+  display: flex;
+  height: calc(var(--taskbar-h) - 6px);
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+  overflow-x: auto;
+}
+
+.taskbar-button {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  max-width: 180px;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px;
+  font-size: 0.95rem;
+}
+
+.taskbar-button img {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.taskbar-button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tray-clock {
+  display: flex;
+  height: calc(var(--taskbar-h) - 8px);
+  flex-shrink: 0;
+  align-items: center;
+  margin-left: auto;
+  border: 1px solid;
+  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
+  padding: 0 8px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+/* Start menu */
+.start-menu {
+  position: absolute;
+  bottom: calc(100% + 2px);
+  left: 2px;
+  z-index: 10001;
+  display: flex;
+  box-sizing: border-box;
+  background: var(--win-face);
+  padding: 2px;
+  box-shadow:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px var(--win-shadow),
+    inset 2px 2px var(--win-mid);
+}
+
+.start-banner {
+  display: flex;
+  width: 26px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(#000080, #1084d0);
+  color: #fff;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: 1px;
+}
+
+.start-menu-items {
+  min-width: 190px;
+  padding: 2px;
+}
+
+.start-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 18px 5px 6px;
+  color: #000;
+  text-align: left;
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.start-item img {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.start-item:hover,
+.start-item:focus-visible {
+  background: var(--win-navy);
+  color: #fff;
+  outline: none;
+}
+
+.start-sep {
+  height: 2px;
+  margin: 4px 2px;
+  border-top: 1px solid var(--win-shadow);
+  border-bottom: 1px solid var(--win-light);
 }
 
 /* React Tabs */
@@ -96,25 +458,25 @@ button {
 
 .react-tabs__tab {
   color: #272727;
-  background: #c3c3c3;
+  background: var(--win-face);
   border: 2px solid;
   padding: 8px 20px;
-  border-top-color: #f7f7f7;
-  border-right-color: #272727;
-  border-left-color: #f7f7f7;
-  border-bottom: 1px solid #f7f7f7;
+  border-top-color: var(--win-light);
+  border-right-color: var(--win-dark);
+  border-left-color: var(--win-light);
+  border-bottom: 1px solid var(--win-light);
   border-top-left-radius: 5px;
   border-top-right-radius: 5px;
   box-shadow:
-    inset 2px 0 #dfdfdf,
-    inset -2px 0 #828282;
+    inset 2px 0 var(--win-mid),
+    inset -2px 0 var(--win-shadow);
 }
 
 .react-tabs__tab--selected {
   box-shadow:
     inset 0 -4px transparent,
-    inset 2px 0 #dfdfdf,
-    inset -2px 0 #828282;
+    inset 2px 0 var(--win-mid),
+    inset -2px 0 var(--win-shadow);
   position: relative;
 }
 
@@ -126,32 +488,34 @@ button {
   position: absolute;
   left: 1%;
   bottom: -5px;
-  background: #c3c3c3;
+  background: var(--win-face);
 }
 
 .tab-panels {
   border: 2px solid;
-  border-color: #f7f7f7 #272727 #272727 #f7f7f7;
+  border-color: var(--win-light) var(--win-dark) var(--win-dark) var(--win-light);
   box-shadow:
-    inset 2px 2px #dfdfdf,
-    inset -2px -2px #828282;
+    inset 2px 2px var(--win-mid),
+    inset -2px -2px var(--win-shadow);
   padding: 1.5rem;
 }
 
 /* Interactive States */
+a,
 a:hover,
-a:hover > *,
-button:hover,
-button:hover > * {
-  cursor: url('./assets/images/cursor-click.png'), auto;
+a:hover > * {
+  cursor:
+    url('./assets/images/cursor-click.png') 5 0,
+    pointer;
 }
 
 .react-tabs__tab:hover {
   cursor:
-    url('./assets/images/cursor-click.png') 0 0,
-    pointer;
+    url('./assets/images/cursor.png') 0 0,
+    default;
 }
 
+button:disabled,
 button:disabled:hover,
 button:disabled:hover > * {
   cursor:
@@ -168,11 +532,17 @@ button:focus-visible,
 }
 
 .button-shadow:focus-visible,
+.button-pressed:focus-visible,
 .react-tabs .react-tabs__tab:focus-visible {
-  outline-offset: -5px;
+  outline-offset: -4px;
 }
 
-.windowbox-header button:focus-visible {
+.desktop-icon:focus-visible {
+  outline: 1px dotted #fff;
+  outline-offset: 2px;
+}
+
+.win95-title button:focus-visible {
   outline-color: #fff;
   outline-offset: 1px;
 }
@@ -182,9 +552,30 @@ button:focus-visible,
 }
 
 /* Media Queries */
-@media (max-width: 1023px) {
-  body {
-    overflow: hidden;
+@media (max-width: 767px) {
+  :root {
+    --taskbar-h: 48px;
+  }
+
+  .desktop-icons,
+  .quick-launch {
+    display: none;
+  }
+
+  .start-menu {
+    right: 2px;
+    left: 2px;
+  }
+
+  .start-item {
+    min-height: 44px;
+    font-size: 1.05rem;
+  }
+
+  .taskbar-button {
+    max-width: none;
+    min-width: 72px;
+    flex: 1 0 72px;
   }
 
   .tab-panels {

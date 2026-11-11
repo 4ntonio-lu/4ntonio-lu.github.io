@@ -2,7 +2,13 @@ import { JSX, useEffect, useState } from 'react';
 
 const MINUTE = 60_000;
 
-/** The Win95 notification-area clock: hours and minutes, with the full date on hover. */
+const fullDate = (date: Date) => date.toLocaleDateString([], { dateStyle: 'full' });
+const shortDate = (date: Date) =>
+  date.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' });
+const shortTime = (date: Date) =>
+  date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+/** Tray clock. The date sits beside the time; hovering still shows the full date. */
 function TrayClock(): JSX.Element {
   const [now, setNow] = useState(() => new Date());
 
@@ -22,12 +28,9 @@ function TrayClock(): JSX.Element {
   }, []);
 
   return (
-    <div
-      title={now.toLocaleDateString([], { dateStyle: 'full' })}
-      className="ml-auto shrink-0 whitespace-nowrap border border-solid px-3 py-[5px] text-[0.95rem] [border-color:#828282_#F7F7F7_#F7F7F7_#828282]"
-    >
+    <div title={fullDate(now)} className="tray-clock">
       <time dateTime={now.toISOString()}>
-        {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+        {shortDate(now)} {shortTime(now)}
       </time>
     </div>
   );

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { DesktopProvider } from '../../desktop/DesktopProvider';
 import { clearMarketMemory, writeCache } from '../../market/cache';
 import { CRYPTO_HISTORY_CACHE, CRYPTO_QUOTE_CACHE } from '../../market/coingecko';
 import Crypto from './Crypto';
@@ -47,8 +48,10 @@ describe('Crypto', () => {
     });
 
     render(
-      <MemoryRouter>
-        <Crypto />
+      <MemoryRouter initialEntries={['/crypto']}>
+        <DesktopProvider>
+          <Crypto />
+        </DesktopProvider>
       </MemoryRouter>,
     );
 
