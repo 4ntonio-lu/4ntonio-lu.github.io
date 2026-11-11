@@ -4,242 +4,316 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  Title,
+  Filler,
   Tooltip,
-  ChartData,
+  type ChartData,
+  type ChartOptions,
 } from 'chart.js';
 import { TabList, TabPanel, Tabs, Tab } from 'react-tabs';
-import { useState, useEffect, JSX } from 'react';
+import { useEffect, useState, JSX } from 'react';
 import { Line } from 'react-chartjs-2';
 import WindowBox from '../elements/WindowBox';
 import { img } from '../../assets/images/img';
 import 'react-tabs/style/react-tabs.css';
+import { createCryptoRefreshSchedule } from '../../market/backoff';
+import { readCache, writeCache } from '../../market/cache';
+import { crosshairPlugin, win95Font, win95Tooltip } from '../../market/chartChrome';
+import {
+  CRYPTO_HISTORY_CACHE,
+  CRYPTO_HISTORY_TTL_MS,
+  CRYPTO_IDS,
+  CRYPTO_QUOTE_CACHE,
+  CRYPTO_QUOTE_TTL_MS,
+  fetchCryptoHistory,
+  fetchCryptoQuotes,
+} from '../../market/coingecko';
+import {
+  formatAxisDate,
+  formatClock,
+  formatMarketCap,
+  formatSignedPercent,
+  formatTooltipDate,
+  formatUsd,
+} from '../../market/format';
+import {
+  LINE_RANGES,
+  percentChange,
+  rangeDays,
+  seriesBounds,
+  sliceByDays,
+} from '../../market/series';
+import type { LineRangeId } from '../../market/series';
+import type { LinePoint, Quote, QuoteBook } from '../../market/types';
+import RangeButtons from '../market/RangeButtons';
+import RefreshStatus from '../market/RefreshStatus';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
-const cryptoIds = ['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin'];
-
-interface CoinData {
-  changePercentage24h: number;
-  displayName: string;
-  marketCap: number;
-  image: string;
-  price: number;
+function chartOptions(points: LinePoint[]): ChartOptions<'line'> {
+  return {
+    responsive: true,
+    aspectRatio: 2.15,
+    animation: { duration: 180 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...win95Tooltip,
+        intersect: false,
+        mode: 'index',
+        callbacks: {
+          title(items) {
+            const point = points[items[0]?.dataIndex ?? -1];
+            return point ? formatTooltipDate(point.t) : '';
+          },
+          label(item) {
+            const index = item.dataIndex;
+            const price = points[index]?.price;
+            if (price == null) return '';
+            const lines = [`$${formatUsd(price)}`];
+            const prior = points[index - 1]?.price;
+            if (prior != null) {
+              const day = percentChange(prior, price);
+              if (day != null) lines.push(`${formatSignedPercent(day)} vs prior close`);
+            }
+            const start = points[0]?.price;
+            if (start != null && index > 0) {
+              const fromStart = percentChange(start, price);
+              if (fromStart != null)
+                lines.push(`${formatSignedPercent(fromStart)} from range start`);
+            }
+            return lines;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { color: '#b5b5b5' },
+        ticks: {
+          maxTicksLimit: 6,
+          color: '#272727',
+          font: { family: win95Font, size: 12 },
+        },
+      },
+      y: {
+        grid: { color: '#b5b5b5' },
+        ticks: {
+          color: '#272727',
+          font: { family: win95Font, size: 12 },
+          callback: (value) => (typeof value === 'number' ? `$${formatUsd(value)}` : String(value)),
+        },
+      },
+    },
+  };
 }
 
-type PriceMap = Record<string, CoinData>;
-type ChartMap = Record<string, ChartData<'line'>>;
+function chartData(points: LinePoint[], days: number): ChartData<'line'> {
+  return {
+    labels: points.map((point) => formatAxisDate(point.t, days)),
+    datasets: [
+      {
+        data: points.map((point) => point.price),
+        borderColor: '#000080',
+        backgroundColor: 'rgba(0, 0, 128, 0.12)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointHoverBackgroundColor: '#000080',
+      },
+    ],
+  };
+}
+
+function ChangeText({ value, caption }: { value: number; caption: string }): JSX.Element {
+  const up = value >= 0;
+  return (
+    <p className={`m-0 flex items-center text-xl ${up ? 'text-green-700' : 'text-red-700'}`}>
+      {up ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
+      <span className="ml-1 text-base text-[#272727]">{caption}</span>
+    </p>
+  );
+}
 
 function CryptoPrices(): JSX.Element {
-  const [prices, setPrices] = useState<PriceMap>({});
-  const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState<ChartMap>({});
-  const [retrievalTime, setRetrievalTime] = useState<string | null>(null);
+  const [quotes, setQuotes] = useState<Record<string, Quote> | null>(null);
+  const [history, setHistory] = useState<Record<string, LinePoint[]> | null>(null);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
+  const [chartError, setChartError] = useState(false);
+  const [range, setRange] = useState<LineRangeId>('1Y');
 
   useEffect(() => {
-    let attempt = 1;
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let active = true;
 
-    const scheduleNextFetch = () => {
-      const minutes = Math.min(0.5 * Math.pow(attempt++, 2), 240);
-      timeoutId = setTimeout(
-        () => {
-          fetchPrices();
-          attempt += 1;
-          scheduleNextFetch();
-        },
-        minutes * 60 * 1000,
-      );
+    const refreshPrices = () => {
+      setRefreshing(true);
+      void fetchCryptoQuotes(CRYPTO_IDS)
+        .then((next) => {
+          if (!active) return;
+          const at = Date.now();
+          setQuotes(next);
+          setUpdatedAt(at);
+          setRefreshError(false);
+          writeCache(CRYPTO_QUOTE_CACHE, { quotes: next, updatedAt: at } satisfies QuoteBook);
+        })
+        .catch((error: unknown) => {
+          console.error('Error fetching CoinGecko data:', error);
+          if (!active) return;
+          setRefreshError(true);
+        })
+        .finally(() => {
+          if (active) setRefreshing(false);
+        });
     };
 
-    const cachedData = localStorage.getItem('cryptoData');
-    if (cachedData) {
-      const parsed = JSON.parse(cachedData) as {
-        chartData: ChartMap;
-        prices: PriceMap;
-        retrievalTime: string;
-      };
-      if (Date.now() - new Date(parsed.retrievalTime).getTime() <= 2 * 60 * 1000) {
-        setChartData(parsed.chartData);
-        setPrices(parsed.prices);
-        setRetrievalTime(parsed.retrievalTime);
-        setLoading(false);
-      } else {
-        fetchPrices();
-      }
-    } else {
-      fetchPrices();
+    try {
+      localStorage.removeItem('cryptoData');
+    } catch {
+      // Ignore private-mode storage.
     }
 
-    scheduleNextFetch();
-    return () => clearTimeout(timeoutId);
+    const cachedQuotes = readCache<QuoteBook>(CRYPTO_QUOTE_CACHE, CRYPTO_QUOTE_TTL_MS);
+    if (cachedQuotes) {
+      setQuotes(cachedQuotes.quotes);
+      setUpdatedAt(cachedQuotes.updatedAt);
+    } else {
+      refreshPrices();
+    }
+
+    const cachedHistory = readCache<Record<string, LinePoint[]>>(
+      CRYPTO_HISTORY_CACHE,
+      CRYPTO_HISTORY_TTL_MS,
+    );
+    if (cachedHistory) {
+      setHistory(cachedHistory);
+    } else {
+      void fetchCryptoHistory(CRYPTO_IDS)
+        .then((next) => {
+          if (!active) return;
+          setHistory(next);
+          setChartError(false);
+          writeCache(CRYPTO_HISTORY_CACHE, next);
+        })
+        .catch((error: unknown) => {
+          console.error('Error fetching CoinGecko data:', error);
+          if (!active) return;
+          setChartError(true);
+        });
+    }
+
+    const stop = createCryptoRefreshSchedule(refreshPrices);
+    return () => {
+      active = false;
+      stop();
+    };
   }, []);
 
-  const fetchPrices = async () => {
-    try {
-      setLoading(true);
-      const detailedPrices: PriceMap = {};
-      for (const id of cryptoIds) {
-        const response = await fetch(
-          `https://cloudflare-worker.4ntonio-lu.workers.dev?id=${encodeURIComponent(id)}&type=info`,
-        );
-        if (!response.ok) {
-          throw new Error(
-            `Error fetching CoinGecko info data: ${response.status}-${response.statusText}`,
-          );
-        }
-        const data = await response.json();
-        detailedPrices[id] = {
-          image: data.image.large,
-          price: data.market_data.current_price.usd,
-          marketCap: data.market_data.market_cap.usd,
-          changePercentage24h: data.market_data.price_change_percentage_24h,
-          displayName: data.name,
-        };
-      }
-      setPrices(detailedPrices);
-      const historicalData: ChartMap = {};
-      for (const id of cryptoIds) {
-        const response = await fetch(
-          `https://cloudflare-worker.4ntonio-lu.workers.dev?id=${encodeURIComponent(id)}&type=chart`,
-        );
-        if (!response.ok) {
-          throw new Error(
-            `Error fetching CoinGecko chart data: ${response.status}-${response.statusText}`,
-          );
-        }
-        const data = await response.json();
-        historicalData[id] = {
-          labels: data.prices.map(([timestamp]: [number, number]) =>
-            new Date(timestamp).toLocaleDateString(),
-          ),
-          datasets: [
-            {
-              data: data.prices.map(([, price]: [number, number]) => price),
-              borderColor: 'red',
-              borderWidth: 2,
-              fill: false,
-            },
-          ],
-        };
-      }
-      const currentTime = new Date().toLocaleString();
-      localStorage.setItem(
-        'cryptoData',
-        JSON.stringify({
-          chartData: historicalData,
-          prices: detailedPrices,
-          retrievalTime: currentTime,
-        }),
-      );
-      setChartData(historicalData);
-      setRetrievalTime(currentTime);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching CoinGecko data:', error);
-      setLoading(false);
-    }
-  };
-
-  const formatMarketCap = (marketCap: number): string => {
-    if (marketCap >= 1e9) return `${(marketCap / 1e9).toFixed(1)}b`;
-    if (marketCap >= 1e6) return `${(marketCap / 1e6).toFixed(1)}m`;
-    return marketCap.toFixed(2);
-  };
+  const days = rangeDays(range);
 
   return (
-    <>
-      {loading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="w-60 select-none border-2 border-black bg-[#aaaaaa] py-4 text-center text-xl shadow-[3px_3px_0_0_black]">
-            Loading...
-          </div>
-        </div>
-      )}
-
-      <WindowBox
-        name="Cryptocurrencies"
-        width={0.6}
-        content={
-          <div className="m-1 p-1 sm:m-3">
+    <WindowBox
+      name="Cryptocurrencies"
+      width={0.64}
+      content={
+        <div className="m-1 p-1 sm:m-3">
+          {!quotes ? (
+            <div role="status" className="px-6 py-10 text-center text-xl text-[#272727]">
+              {refreshError ? "Couldn't load prices. The next try is automatic." : 'Loading...'}
+            </div>
+          ) : (
             <Tabs>
               <TabList>
-                {Object.entries(prices).map(([id, info]) => (
-                  <Tab key={id}>{info.displayName}</Tab>
+                {Object.entries(quotes).map(([id, info]) => (
+                  <Tab key={id}>{info.name}</Tab>
                 ))}
               </TabList>
               <div className="tab-panels">
-                {Object.entries(prices).map(([id, data]) => {
-                  const isPositive = data.changePercentage24h >= 0;
+                {Object.entries(quotes).map(([id, data]) => {
+                  const points = sliceByDays(history?.[id] ?? [], days);
+                  const rangeMove =
+                    points.length >= 2
+                      ? percentChange(points[0].price, points[points.length - 1].price)
+                      : null;
+                  const bounds = seriesBounds(points.map((point) => point.price));
                   return (
                     <TabPanel key={id}>
-                      <div className="mb-4 flex flex-wrap items-center gap-4 sm:flex-nowrap">
-                        <img src={data.image} alt={id} className="h-10 w-10" />
-                        <h1 className="m-0 max-md:text-2xl">{id.toUpperCase()}</h1>
-                        <h1 className="m-0 max-md:text-2xl">${data.price.toFixed(2)}</h1>
-                        <h2
-                          className={`flex items-center max-md:text-xl ${isPositive ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {isPositive ? '▲' : '▼'} {Math.abs(data.changePercentage24h).toFixed(2)}%
-                        </h2>
-                        <br className="block md:hidden" />
-                        <span className="ml-auto text-lg font-semibold text-gray-500">
-                          Market Cap: {formatMarketCap(data.marketCap)}
-                        </span>
-                        <span className="ml-4 text-lg font-semibold text-gray-500">
-                          Last Updated: {new Date(retrievalTime!).toLocaleTimeString()}
-                        </span>
+                      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        {data.image && <img src={data.image} alt="" className="h-10 w-10" />}
+                        <h1 className="m-0 text-2xl">{data.name}</h1>
+                        <p className="m-0 text-2xl">${formatUsd(data.price)}</p>
+                        <ChangeText value={data.changePct24h} caption="24h" />
+                        {typeof data.marketCap === 'number' && (
+                          <p className="m-0 text-lg font-semibold text-[#272727] sm:ml-auto">
+                            Market Cap: {formatMarketCap(data.marketCap)}
+                          </p>
+                        )}
                       </div>
-                      {chartData[id] && (
-                        <Line
-                          data={chartData[id]}
-                          options={{
-                            plugins: {
-                              tooltip: {
-                                intersect: false,
-                                callbacks: {
-                                  label: (tooltipItem) =>
-                                    `$${(tooltipItem.raw as number).toFixed(2)}`,
-                                },
-                                displayColors: false,
-                              },
-                            },
-                            responsive: true,
-                            scales: {
-                              x: { grid: { display: false } },
-                              y: { grid: { display: false }, ticks: { display: true } },
-                            },
-                            elements: {
-                              point: { radius: 0 },
-                            },
-                          }}
+                      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        <RangeButtons
+                          ranges={LINE_RANGES}
+                          value={range}
+                          onChange={(id) => setRange(id as LineRangeId)}
                         />
-                      )}
-                      <div className="mt-6 flex items-center justify-center space-x-2 text-xs text-gray-600">
-                        <span className="text-[0.8rem] font-semibold text-gray-600">
-                          Powered by
-                        </span>
-                        <a
-                          href="https://www.coingecko.com/en/api"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <img
-                            src={img.coingecko}
-                            alt="CoinGecko"
-                            className="relative top-[3px] h-5"
-                          />
-                        </a>
+                        {rangeMove != null && <ChangeText value={rangeMove} caption="this range" />}
+                        {bounds && (
+                          <p className="m-0 text-sm text-[#272727]">
+                            High ${formatUsd(bounds.high)} · Low ${formatUsd(bounds.low)}
+                          </p>
+                        )}
                       </div>
+                      {points.length >= 2 ? (
+                        <>
+                          <p className="sr-only">
+                            {data.name} is {formatSignedPercent(rangeMove ?? 0)} over {range}, from
+                            ${formatUsd(points[0].price)} to $
+                            {formatUsd(points[points.length - 1].price)}. The crosshair reads each
+                            close from {formatTooltipDate(points[0].t)} through{' '}
+                            {formatTooltipDate(points[points.length - 1].t)}.
+                            {updatedAt ? ` Last price update ${formatClock(updatedAt)}.` : ''}
+                          </p>
+                          <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
+                            <Line
+                              data={chartData(points, days)}
+                              options={chartOptions(points)}
+                              plugins={[crosshairPlugin]}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
+                          {chartError
+                            ? "Couldn't load the chart. Prices above are still updating."
+                            : 'Loading chart…'}
+                        </p>
+                      )}
                     </TabPanel>
                   );
                 })}
               </div>
             </Tabs>
-          </div>
-        }
-      />
-    </>
+          )}
+          {quotes && (
+            <>
+              <RefreshStatus refreshing={refreshing} updatedAt={updatedAt} error={refreshError} />
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#272727]">
+                <span className="text-[0.8rem] font-semibold">Powered by</span>
+                <a
+                  href="https://www.coingecko.com/en/api"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img src={img.coingecko} alt="CoinGecko" className="relative top-[3px] h-5" />
+                </a>
+              </div>
+            </>
+          )}
+        </div>
+      }
+    />
   );
 }
 

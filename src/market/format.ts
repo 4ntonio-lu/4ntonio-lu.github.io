@@ -1,0 +1,46 @@
+export function formatUsd(price: number): string {
+  const digits = price >= 1 ? 2 : price >= 0.01 ? 4 : 6;
+  return price.toLocaleString('en-US', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+export function formatMarketCap(marketCap: number): string {
+  if (marketCap >= 1e12) return `${(marketCap / 1e12).toFixed(1)}t`;
+  if (marketCap >= 1e9) return `${(marketCap / 1e9).toFixed(1)}b`;
+  if (marketCap >= 1e6) return `${(marketCap / 1e6).toFixed(1)}m`;
+  return marketCap.toFixed(2);
+}
+
+export function formatSignedPercent(value: number): string {
+  const body = `${Math.abs(value).toFixed(2)}%`;
+  if (value > 0) return `+${body}`;
+  if (value < 0) return `-${body}`;
+  return body;
+}
+
+export function formatAxisDate(
+  timestamp: number,
+  rangeDays: number,
+  locales?: Intl.LocalesArgument,
+): string {
+  const date = new Date(timestamp);
+  if (rangeDays <= 31) {
+    return date.toLocaleDateString(locales, { month: 'short', day: 'numeric' });
+  }
+  return date.toLocaleDateString(locales, { month: 'short', year: '2-digit' });
+}
+
+export function formatTooltipDate(timestamp: number, locales?: Intl.LocalesArgument): string {
+  return new Date(timestamp).toLocaleDateString(locales, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+export function formatClock(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString();
+}
