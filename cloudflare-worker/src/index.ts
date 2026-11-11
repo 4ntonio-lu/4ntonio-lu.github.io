@@ -1,58 +1,114 @@
+import { EQUITY_SYMBOLS, fetchYahooChart } from './yahoo';
+
 interface Env {
 	COINGECKO_APIKEY: string;
 }
 
-export default {
-	async fetch(request: Request, env: Env): Promise<Response> {
-		const url = new URL(request.url);
-		const id = url.searchParams.get('id');
-		const type = url.searchParams.get('type'); // "info" or "chart"
+const COINS = new Set(['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin']);
+const EQUITIES = new Set<string>(EQUITY_SYMBOLS);
 
-		if (!env.COINGECKO_APIKEY) {
-			return new Response('API key is not set', { status: 500 });
+const INFO_TTL_SECONDS = 30 * 60;
+const CHART_TTL_SECONDS = 12 * 60 * 60;
+const EQUITY_TTL_SECONDS = 15 * 60;
+
+const corsHeaders = {
+	'Access-Control-Allow-Origin': '*',
+	'Access-Control-Allow-Methods': 'GET, OPTIONS',
+	'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+function text(message: string, status: number): Response {
+	return new Response(message, { status, headers: corsHeaders });
+}
+
+function json(body: string, status: number, ttlSeconds: number): Response {
+	return new Response(body, {
+		status,
+		headers: {
+			...corsHeaders,
+			'Content-Type': 'application/json',
+			'Cache-Control': `public, max-age=${ttlSeconds}`,
+		},
+	});
+}
+
+async function fromCache(request: Request, load: () => Promise<Response>): Promise<Response> {
+	const cacheKey = new Request(request.url, { method: 'GET' });
+	try {
+		const hit = await caches.default.match(cacheKey);
+		if (hit) return hit;
+	} catch {
+		// The cache binding is missing in some local runs. Fall through to origin.
+	}
+
+	const response = await load();
+	if (response.ok) {
+		try {
+			await caches.default.put(cacheKey, response.clone());
+		} catch {
+			// Serving the fresh response still matters more than storing it.
 		}
+	}
+	return response;
+}
 
-		if (!id) {
-			return new Response('Missing "id" query parameter', { status: 400 });
-		}
+async function serveEquity(request: Request, symbol: string): Promise<Response> {
+	if (!EQUITIES.has(symbol)) return text('Unknown symbol', 400);
+	return fromCache(request, async () => {
+		const payload = await fetchYahooChart(symbol);
+		if (!payload) return text('Failed to fetch equity data', 502);
+		return json(JSON.stringify(payload), 200, EQUITY_TTL_SECONDS);
+	});
+}
 
-		if (!type || (type !== 'info' && type !== 'chart')) {
-			return new Response('Missing or invalid "type" query parameter (info or chart)', { status: 400 });
-		}
+async function serveCrypto(request: Request, env: Env, id: string, type: string): Promise<Response> {
+	if (!COINS.has(id)) return text('Unknown coin', 400);
+	if (type !== 'info' && type !== 'chart') return text('Missing or invalid "type" query parameter', 400);
+	if (!env.COINGECKO_APIKEY) return text('API key is not set', 500);
 
-		let apiUrl = '';
+	const ttl = type === 'info' ? INFO_TTL_SECONDS : CHART_TTL_SECONDS;
+	return fromCache(request, async () => {
 		const params = new URLSearchParams();
-
+		let apiUrl = '';
 		if (type === 'info') {
 			apiUrl = `https://api.coingecko.com/api/v3/coins/${id}`;
 			params.set('localization', 'false');
-		} else if (type === 'chart') {
+		} else {
 			apiUrl = `https://api.coingecko.com/api/v3/coins/${id}/market_chart`;
 			params.set('vs_currency', 'usd');
 			params.set('days', '365');
 			params.set('interval', 'daily');
 		}
 
-		const fetchUrl = `${apiUrl}?${params.toString()}`;
-
+		let upstream: Response;
 		try {
-			const response = await fetch(fetchUrl, {
-				headers: {
-					'x-cg-demo-api-key': env.COINGECKO_APIKEY
-				}
+			upstream = await fetch(`${apiUrl}?${params.toString()}`, {
+				headers: { 'x-cg-demo-api-key': env.COINGECKO_APIKEY },
 			});
-
-			const data = await response.text();
-
-			return new Response(data, {
-				status: response.status,
-				headers: {
-					'Content-Type': 'application/json',
-					'Access-Control-Allow-Origin': '*'
-				}
-			});
-		} catch (error) {
-			return new Response('Failed to fetch data from CoinGecko', { status: 502 });
+		} catch {
+			return text('Failed to fetch data from CoinGecko', 502);
 		}
+
+		const body = await upstream.text();
+		return json(body, upstream.status, upstream.ok ? ttl : 0);
+	});
+}
+
+export default {
+	async fetch(request: Request, env: Env): Promise<Response> {
+		if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
+		if (request.method !== 'GET') return text('Method not allowed', 405);
+
+		const url = new URL(request.url);
+		const type = url.searchParams.get('type');
+		if (type === 'equity') {
+			const symbol = url.searchParams.get('symbol') ?? '';
+			return serveEquity(request, symbol);
+		}
+
+		const id = url.searchParams.get('id') ?? '';
+		if (!id) return text('Missing "id" query parameter', 400);
+		if (!type) return text('Missing or invalid "type" query parameter (info or chart)', 400);
+		return serveCrypto(request, env, id, type);
 	},
 };

@@ -7,6 +7,7 @@ import Resume from './components/modules/Resume';
 import Experiences from './components/modules/Experiences';
 import Projects from './components/modules/Projects';
 import Crypto from './components/modules/Crypto';
+import Stocks from './components/modules/Stocks';
 import { img } from './assets/images/img';
 
 const routes = [
@@ -35,6 +36,11 @@ const routes = [
     path: '/crypto',
     icon: img.crypto,
   },
+  {
+    name: 'Stocks',
+    path: '/stocks',
+    icon: img.stocks,
+  },
 ];
 
 function App() {
@@ -55,6 +61,7 @@ function App() {
         <Route path="/experiences" element={<Experiences />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/crypto" element={<Crypto />} />
+        <Route path="/stocks" element={<Stocks />} />
       </Routes>
     </>
   );
