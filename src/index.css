@@ -26,7 +26,7 @@
   --win-navy: #000080;
   --win-teal: #008080;
   --win-inactive: #808080;
-  --taskbar-h: 36px;
+  --taskbar-h: 40px;
 }
 
 /* Base Styles */
@@ -138,7 +138,7 @@ label {
 
 .desktop-icon {
   display: flex;
-  width: 76px;
+  width: 88px;
   flex-direction: column;
   align-items: center;
   gap: 4px;
@@ -151,8 +151,8 @@ label {
 }
 
 .desktop-icon img {
-  width: 40px;
-  height: 40px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
   image-rendering: auto;
 }
@@ -320,12 +320,12 @@ label {
   gap: 4px;
   padding: 0 8px 0 4px;
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
 }
 
 .start-button img {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
 }
 
@@ -347,12 +347,12 @@ label {
   align-items: center;
   gap: 6px;
   padding: 0 6px;
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .taskbar-button img {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   object-fit: contain;
 }
@@ -545,7 +545,7 @@ button:focus-visible,
 /* Media Queries */
 @media (max-width: 767px) {
   :root {
-    --taskbar-h: 48px;
+    --taskbar-h: 52px;
   }
 
   .desktop-icons {
