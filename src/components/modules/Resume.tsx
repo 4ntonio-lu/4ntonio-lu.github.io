@@ -6,16 +6,14 @@ function Resume(): JSX.Element {
   return (
     <WindowBox
       name="Resume"
-      width={0.6}
+      width={0.84}
       content={
-        <div className="window-content resume-content">
-          <iframe
-            src={resumeUrl}
-            className="m-[2px] h-[80vh] w-full"
-            onMouseDown={(e) => e.stopPropagation()}
-            title="Resume PDF"
-          />
-        </div>
+        <iframe
+          src={`${resumeUrl}#navpanes=0&view=FitH`}
+          className="resume-page"
+          onMouseDown={(e) => e.stopPropagation()}
+          title="Resume PDF"
+        />
       }
     />
   );

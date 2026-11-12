@@ -276,6 +276,20 @@ label {
   overflow: auto;
 }
 
+/* A letter page needs most of the desktop. The height leaves room for the title bar,
+   the window bevel, the cascade offset, and the taskbar. */
+.resume-page {
+  display: block;
+  width: 100%;
+  height: calc(100dvh - var(--taskbar-h) - 5.5rem);
+  border: 0;
+  background: #fff;
+}
+
+.window-fill .resume-page {
+  height: 100%;
+}
+
 /* Taskbar */
 .taskbar {
   position: fixed;

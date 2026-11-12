@@ -57,13 +57,14 @@ describe('App', () => {
     }
   });
 
-  it('embeds the resume PDF', () => {
+  it('embeds the resume PDF in a wide window', () => {
     renderAt('/resume');
 
     expect(screen.getByTitle('Resume PDF')).toHaveAttribute(
       'src',
       expect.stringContaining('Resume.pdf'),
     );
+    expect(screen.getByRole('dialog', { name: 'Resume' })).toHaveStyle({ width: '84%' });
   });
 
   it('closes the window from the title bar and leaves its taskbar button gone', async () => {
