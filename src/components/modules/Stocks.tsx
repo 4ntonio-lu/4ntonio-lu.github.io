@@ -6,13 +6,14 @@ import {
   type ChartOptions,
 } from 'chart.js';
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
-import { useEffect, useState, JSX } from 'react';
+import { useEffect, useRef, useState, JSX } from 'react';
 import { Chart } from 'react-chartjs-2';
 import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
 import 'react-tabs/style/react-tabs.css';
 import WindowBox from '../elements/WindowBox';
 import { img } from '../../assets/images/img';
 import { crosshairPlugin, win95Font, win95Tooltip } from '../../market/chartChrome';
+import { createEquityRefreshSchedule } from '../../market/backoff';
 import { readCache, writeCache } from '../../market/cache';
 import {
   EQUITIES,
@@ -159,7 +160,11 @@ function Stocks(): JSX.Element {
   const [snapshots, setSnapshots] = useState<Record<string, EquitySnapshot>>({});
   const [loadingSymbol, setLoadingSymbol] = useState<string | null>(null);
   const [failedSymbol, setFailedSymbol] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const symbolRef = useRef(symbol);
+  symbolRef.current = symbol;
 
   useEffect(() => {
     let active = true;
@@ -195,6 +200,34 @@ function Stocks(): JSX.Element {
       active = false;
     };
   }, [symbol]);
+
+  useEffect(() => {
+    let active = true;
+    const stop = createEquityRefreshSchedule(() => {
+      const target = symbolRef.current;
+      setRefreshing(true);
+      void fetchEquity(target)
+        .then((snapshot) => {
+          if (!active) return;
+          writeCache(equityCacheKey(target), snapshot);
+          setSnapshots((current) => ({ ...current, [target]: snapshot }));
+          setRefreshError(false);
+          setFailedSymbol((current) => (current === target ? null : current));
+        })
+        .catch((error: unknown) => {
+          console.error('Error fetching equity data:', error);
+          if (!active) return;
+          setRefreshError(true);
+        })
+        .finally(() => {
+          if (active) setRefreshing(false);
+        });
+    });
+    return () => {
+      active = false;
+      stop();
+    };
+  }, []);
 
   const equity = EQUITIES.find((item) => item.symbol === symbol) ?? EQUITIES[0];
   const snapshot = snapshots[symbol];
@@ -289,9 +322,9 @@ function Stocks(): JSX.Element {
                         {showStats && snapshot && <StatsPanel rows={equityStatRows(snapshot)} />}
                       </div>
                       <RefreshStatus
-                        refreshing={loading}
+                        refreshing={loading || refreshing}
                         updatedAt={snapshot?.asOf ?? null}
-                        error={failed}
+                        error={failed || refreshError}
                         errorText={`Couldn't load ${equity.name}.`}
                       />
                     </div>

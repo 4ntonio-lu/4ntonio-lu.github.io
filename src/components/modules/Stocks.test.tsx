@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -33,6 +33,7 @@ function snapshot(now: number): EquitySnapshot {
 
 describe('Stocks', () => {
   beforeEach(() => {
+    vi.useRealTimers();
     clearMarketMemory();
     localStorage.clear();
     vi.unstubAllGlobals();
@@ -100,5 +101,49 @@ describe('Stocks', () => {
     expect(screen.getByRole('tab', { name: 'SPY', selected: true })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'S&P 500' })).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the open symbol five times and then stops', async () => {
+    vi.useFakeTimers();
+    const fetchSpy = vi.fn((input: RequestInfo) => {
+      const symbol = new URL(String(input)).searchParams.get('symbol') ?? 'AAPL';
+      return Promise.resolve(
+        Response.json({
+          symbol,
+          price: 111,
+          previousClose: 105,
+          candles: [
+            { t: 1, o: 1, h: 2, l: 1, c: 1, v: 1 },
+            { t: 2, o: 1, h: 2, l: 1, c: 111, v: 1 },
+          ],
+        }),
+      );
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+    writeCache(equityCacheKey('AAPL'), snapshot(Date.now()));
+
+    render(
+      <MemoryRouter>
+        <DesktopProvider initialOpen="stocks">
+          <Stocks />
+        </DesktopProvider>
+      </MemoryRouter>,
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(14_999);
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1 + 30_000 * 4);
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
+    expect(String(fetchSpy.mock.calls[0][0])).toContain('symbol=AAPL');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(5);
   });
 });
