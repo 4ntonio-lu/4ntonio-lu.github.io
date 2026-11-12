@@ -1,29 +1,29 @@
 import { JSX, useEffect, useState } from 'react';
 
-const MINUTE = 60_000;
+const SECOND = 1_000;
 
 const fullDate = (date: Date) => date.toLocaleDateString([], { dateStyle: 'full' });
 const shortDate = (date: Date) =>
   date.toLocaleDateString([], { month: 'numeric', day: 'numeric', year: 'numeric' });
 const shortTime = (date: Date) =>
-  date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 
-/** Tray clock. The date sits beside the time; hovering still shows the full date. */
+/** Tray clock. The short date sits beside h:mm:ss; hovering still shows the full date. */
 function TrayClock(): JSX.Element {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
-    const scheduleNextMinute = () => {
+    const scheduleNextSecond = () => {
       timer = setTimeout(
         () => {
           setNow(new Date());
-          scheduleNextMinute();
+          scheduleNextSecond();
         },
-        MINUTE - (Date.now() % MINUTE),
+        SECOND - (Date.now() % SECOND),
       );
     };
-    scheduleNextMinute();
+    scheduleNextSecond();
     return () => clearTimeout(timer);
   }, []);
 
