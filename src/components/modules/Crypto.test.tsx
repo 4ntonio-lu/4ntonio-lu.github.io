@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -36,7 +36,7 @@ describe('Crypto', () => {
       image: 'https://example.com/btc.png',
       asOf: now,
     });
-    writeCache(cryptoHistoryCacheKey('bitcoin'), [
+    writeCache(cryptoHistoryCacheKey('bitcoin', '365'), [
       { t: now - 10 * DAY, price: 100 },
       { t: now - 2 * DAY, price: 110 },
       { t: now - DAY, price: 120 },
@@ -83,11 +83,28 @@ describe('Crypto', () => {
     expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: '1W' }));
+    const end = now;
+    fetchSpy.mockImplementation((input: RequestInfo) => {
+      const url = String(input);
+      if (!url.includes('days=1')) return Promise.resolve(new Response('no', { status: 400 }));
+      const prices = Array.from({ length: 12 }, (_, index) => [
+        end - (11 - index) * 5 * 60_000,
+        100 + index,
+      ]);
+      return Promise.resolve(Response.json({ prices }));
+    });
 
-    expect(screen.getByRole('button', { name: '1W', pressed: true })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('9.09%');
-    expect(fetchSpy).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: '1D' }));
+
+    expect(screen.getByRole('button', { name: '1D', pressed: true })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('11.00%');
+    });
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $111.00');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('Low $100.00');
+    const chartUrl = String(fetchSpy.mock.calls[fetchSpy.mock.calls.length - 1]?.[0]);
+    expect(chartUrl).toContain('days=1');
+    expect(chartUrl).not.toContain('interval=');
   });
 
   it('does not draw a one-year series as five years', async () => {
@@ -113,7 +130,7 @@ describe('Crypto', () => {
       marketCap: 1,
       asOf: now,
     });
-    writeCache(cryptoHistoryCacheKey('bitcoin'), [
+    writeCache(cryptoHistoryCacheKey('bitcoin', '365'), [
       { t: now - 10 * DAY, price: 100 },
       { t: now, price: 120 },
     ]);
@@ -172,7 +189,7 @@ describe('Crypto', () => {
       marketCap: 1,
       asOf: now,
     });
-    writeCache(cryptoHistoryCacheKey('bitcoin'), [
+    writeCache(cryptoHistoryCacheKey('bitcoin', '365'), [
       { t: now - DAY, price: 1 },
       { t: now, price: 2 },
     ]);
@@ -191,7 +208,7 @@ describe('Crypto', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Ethereum' }));
     expect(urls.every((url) => url.includes('id=ethereum'))).toBe(true);
     expect(urls.some((url) => url.includes('type=info'))).toBe(true);
-    expect(urls.some((url) => url.includes('type=chart'))).toBe(true);
+    expect(urls.some((url) => url.includes('type=chart') && url.includes('days=365'))).toBe(true);
     expect(urls.some((url) => url.includes('id=bitcoin'))).toBe(false);
 
     const beforeRefresh = urls.length;

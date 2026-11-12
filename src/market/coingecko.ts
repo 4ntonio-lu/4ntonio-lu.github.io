@@ -40,9 +40,9 @@ export function cryptoHistoryCacheKey(id: string, days?: string): string {
 export const CRYPTO_QUOTE_TTL_MS = 2 * 60 * 1000;
 
 /**
- * The worker returns one year of daily closes. That series barely moves
- * during a visit, so it stays cached for half a day instead of riding along
- * with the price timer.
+ * Each range is its own series. A day is 5-minute bars and a week through
+ * three months is hourly; a year stays daily. None of that moves during a
+ * visit, so a series stays cached for half a day instead of the price timer.
  */
 export const CRYPTO_HISTORY_TTL_MS = 12 * 60 * 60 * 1000;
 

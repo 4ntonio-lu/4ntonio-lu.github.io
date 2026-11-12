@@ -38,7 +38,9 @@ import {
 } from '../../market/format';
 import {
   LINE_RANGES,
+  chartSeriesCacheable,
   chartSeriesCovers,
+  lineChartQueryDays,
   percentChange,
   rangeDays,
   seriesBounds,
@@ -54,7 +56,7 @@ import StatsPanel from '../market/StatsPanel';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
-function chartOptions(points: LinePoint[]): ChartOptions<'line'> {
+function chartOptions(points: LinePoint[], days: number): ChartOptions<'line'> {
   return {
     responsive: true,
     aspectRatio: 2.15,
@@ -69,7 +71,7 @@ function chartOptions(points: LinePoint[]): ChartOptions<'line'> {
         callbacks: {
           title(items) {
             const point = points[items[0]?.dataIndex ?? -1];
-            return point ? formatTooltipDate(point.t) : '';
+            return point ? formatTooltipDate(point.t, undefined, days <= 1) : '';
           },
           label(item) {
             const index = item.dataIndex;
@@ -114,8 +116,9 @@ function chartOptions(points: LinePoint[]): ChartOptions<'line'> {
 }
 
 function chartData(points: LinePoint[], days: number): ChartData<'line'> {
+  const detail = days <= 1 ? 'time' : 'auto';
   return {
-    labels: points.map((point) => formatAxisDate(point.t, days)),
+    labels: points.map((point) => formatAxisDate(point.t, days, undefined, detail)),
     datasets: [
       {
         data: points.map((point) => point.price),
@@ -154,9 +157,7 @@ function CryptoPrices(): JSX.Element {
   const [failedId, setFailedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
-  const [chartErrorId, setChartErrorId] = useState<string | null>(null);
-  const [longHistory, setLongHistory] = useState<Record<string, LinePoint[]>>({});
-  const [longRangeError, setLongRangeError] = useState(false);
+  const [chartErrorKey, setChartErrorKey] = useState<string | null>(null);
   const [range, setRange] = useState<LineRangeId>('1Y');
   const [showStats, setShowStats] = useState(true);
   const coinRef = useRef(coinId);
@@ -204,9 +205,7 @@ function CryptoPrices(): JSX.Element {
     let active = true;
     const id = coinId;
     const cachedQuote = readCache<Quote>(cryptoQuoteCacheKey(id), CRYPTO_QUOTE_TTL_MS);
-    const cachedHistory = readCache<LinePoint[]>(cryptoHistoryCacheKey(id), CRYPTO_HISTORY_TTL_MS);
     if (cachedQuote) setQuotes((current) => ({ ...current, [id]: cachedQuote }));
-    if (cachedHistory) setHistory((current) => ({ ...current, [id]: cachedHistory }));
 
     if (!cachedQuote) {
       const started = Date.now();
@@ -235,57 +234,49 @@ function CryptoPrices(): JSX.Element {
       setLoadingId((current) => (current === id ? null : current));
     }
 
-    if (!cachedHistory) {
-      setChartErrorId((current) => (current === id ? null : current));
-      void fetchCryptoHistory([id])
-        .then((next) => {
-          const points = next[id];
-          if (!points) throw new Error('No market data');
-          writeCache(cryptoHistoryCacheKey(id), points);
-          if (!active) return;
-          setHistory((current) => ({ ...current, [id]: points }));
-        })
-        .catch((error: unknown) => {
-          console.error('Error fetching CoinGecko data:', error);
-          if (!active) return;
-          setChartErrorId(id);
-        });
-    }
-
     return () => {
       active = false;
     };
   }, [coinId]);
 
   useEffect(() => {
-    if (range !== '5Y') return;
     let active = true;
     const id = coinId;
-    const cached = readCache<LinePoint[]>(cryptoHistoryCacheKey(id, '1825'), CRYPTO_HISTORY_TTL_MS);
-    if (cached && chartSeriesCovers(cached, 1825)) {
-      setLongHistory((current) => ({ ...current, [id]: cached }));
-      setLongRangeError(false);
+    const queryDays = lineChartQueryDays(range);
+    const numericDays = rangeDays(range);
+    const key = `${id}:${queryDays}`;
+    const cached = readCache<LinePoint[]>(
+      cryptoHistoryCacheKey(id, queryDays),
+      CRYPTO_HISTORY_TTL_MS,
+    );
+    if (cached) {
+      setHistory((current) => ({ ...current, [key]: cached }));
+      setChartErrorKey((current) => (current === key ? null : current));
       return () => {
         active = false;
       };
     }
 
-    setLongRangeError(false);
-    void fetchCryptoHistory([id], '1825')
+    setChartErrorKey((current) => (current === key ? null : current));
+    void fetchCryptoHistory([id], queryDays)
       .then((next) => {
-        const points = next[id];
-        if (!points || !chartSeriesCovers(points, 1825)) {
-          if (active) setLongRangeError(true);
+        const series = next[id];
+        if (!series) throw new Error('No market data');
+        if (!active) return;
+        if (numericDays >= 1000 && !chartSeriesCovers(series, numericDays)) {
+          setChartErrorKey(key);
           return;
         }
-        writeCache(cryptoHistoryCacheKey(id, '1825'), points);
-        if (!active) return;
-        setLongHistory((current) => ({ ...current, [id]: points }));
-        setLongRangeError(false);
+        if (chartSeriesCacheable(series, numericDays)) {
+          writeCache(cryptoHistoryCacheKey(id, queryDays), series);
+        }
+        setHistory((current) => ({ ...current, [key]: series }));
+        setChartErrorKey((current) => (current === key ? null : current));
       })
       .catch((error: unknown) => {
         console.error('Error fetching CoinGecko data:', error);
-        if (active) setLongRangeError(true);
+        if (!active) return;
+        setChartErrorKey(key);
       });
 
     return () => {
@@ -295,19 +286,12 @@ function CryptoPrices(): JSX.Element {
 
   const days = rangeDays(range);
   const quote = quotes[coinId];
-  const longPoints = longHistory[coinId] ?? [];
-  const longRejected =
-    range === '5Y' &&
-    (longRangeError || (longPoints.length > 0 && !chartSeriesCovers(longPoints, days)));
-  const points =
-    range === '5Y'
-      ? longRejected
-        ? []
-        : sliceByDays(longPoints, days)
-      : sliceByDays(history[coinId] ?? [], days);
+  const historyKey = `${coinId}:${lineChartQueryDays(range)}`;
+  const failedChart = chartErrorKey === historyKey;
+  const points = failedChart ? [] : sliceByDays(history[historyKey] ?? [], days);
   const loading = loadingId === coinId && !quote;
   const failed = failedId === coinId && !quote;
-  const chartError = chartErrorId === coinId && quote != null && points.length < 2;
+  const chartError = failedChart && quote != null;
 
   return (
     <WindowBox
@@ -354,11 +338,7 @@ function CryptoPrices(): JSX.Element {
                           <RangeButtons
                             ranges={LINE_RANGES}
                             value={range}
-                            onChange={(next) => {
-                              const id = next as LineRangeId;
-                              if (id === '5Y') setLongRangeError(false);
-                              setRange(id);
-                            }}
+                            onChange={(next) => setRange(next as LineRangeId)}
                           />
                           <RangeSummary
                             change={rangeMove}
@@ -389,14 +369,14 @@ function CryptoPrices(): JSX.Element {
                                 <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
                                   <Line
                                     data={chartData(series, days)}
-                                    options={chartOptions(series)}
+                                    options={chartOptions(series, days)}
                                     plugins={[crosshairPlugin]}
                                   />
                                 </div>
                               </>
                             ) : (
                               <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                                {range === '5Y' && longRejected
+                                {range === '5Y' && chartError
                                   ? "Couldn't load 5Y. The free chart only goes back one year."
                                   : chartError
                                     ? "Couldn't load the chart. Prices above are still updating."

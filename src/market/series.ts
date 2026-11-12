@@ -46,6 +46,30 @@ export function chartSeriesCovers(points: readonly { t: number }[], days: number
   return span >= 4 * 365 * DAY_MS;
 }
 
+function medianGap(points: readonly { t: number }[]): number | null {
+  if (points.length < 2) return null;
+  const gaps: number[] = [];
+  for (let index = 1; index < points.length; index += 1) {
+    gaps.push(points[index].t - points[index - 1].t);
+  }
+  gaps.sort((a, b) => a - b);
+  return gaps[Math.floor(gaps.length / 2)];
+}
+
+/**
+ * Keep a series for half a day only when it already has the free plan's
+ * granularity: 5 minutes for a day, hourly through 90 days, daily after that.
+ */
+export function chartSeriesCacheable(points: readonly { t: number }[], days: number): boolean {
+  if (!chartSeriesCovers(points, days)) return false;
+  const gap = medianGap(points);
+  if (gap == null) return false;
+  if (days <= 1) return gap <= 20 * 60_000;
+  if (days <= 90) return gap <= 3 * 60 * 60_000;
+  const span = points[points.length - 1].t - points[0].t;
+  return span >= Math.min(days, 365) * DAY_MS * 0.8;
+}
+
 export function equityRangeDays(id: EquityRangeId): number {
   const range = EQUITY_RANGES.find((item) => item.id === id);
   return range ? range.days : 365;

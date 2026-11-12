@@ -3,6 +3,7 @@ import {
   percentChange,
   seriesBounds,
   sliceByDays,
+  chartSeriesCacheable,
   chartSeriesCovers,
   equityCandles,
   equityRangeDays,
@@ -41,6 +42,17 @@ describe('series', () => {
     expect(chartSeriesCovers(year, 1825)).toBe(false);
     expect(chartSeriesCovers(five, 1825)).toBe(true);
     expect(chartSeriesCovers(year, 7)).toBe(true);
+  });
+
+  it('caches a short range only when the points are finer than a daily close', () => {
+    const start = Date.UTC(2026, 10, 12);
+    const every = (step: number, count: number) =>
+      Array.from({ length: count }, (_, index) => ({ t: start + index * step, price: index }));
+    expect(chartSeriesCacheable(every(5 * 60_000, 12), 1)).toBe(true);
+    expect(chartSeriesCacheable(every(DAY, 3), 1)).toBe(false);
+    expect(chartSeriesCacheable(every(60 * 60_000, 24), 7)).toBe(true);
+    expect(chartSeriesCacheable(every(DAY, 8), 7)).toBe(false);
+    expect(chartSeriesCacheable(every(DAY, 300), 365)).toBe(true);
   });
 
   it('can keep a single candle for a one-day stock range', () => {
