@@ -5,7 +5,6 @@ import Experiences from '../components/modules/Experiences';
 import Projects from '../components/modules/Projects';
 import Resume from '../components/modules/Resume';
 import Stocks from '../components/modules/Stocks';
-import WorldClock from '../components/modules/WorldClock';
 import type { AppId } from './apps';
 
 /** One component per app id. Adding an id in `apps.ts` without an entry here fails typecheck. */
@@ -16,5 +15,4 @@ export const appComponents: Record<AppId, ComponentType> = {
   projects: Projects,
   crypto: Crypto,
   stocks: Stocks,
-  clock: WorldClock,
 };

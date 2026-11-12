@@ -41,15 +41,21 @@ describe('App', () => {
     expect(path()).toHaveTextContent(/^\/$/);
   });
 
-  it.each(['/about', '/resume', '/experiences', '/projects', '/crypto', '/stocks'])(
-    'returns %s to the site root without opening that app',
-    (entry) => {
-      renderAt(entry);
+  it.each([
+    '/about',
+    '/resume',
+    '/experiences',
+    '/projects',
+    '/crypto',
+    '/stocks',
+    '/clock',
+    '/world-clock',
+  ])('returns %s to the site root without opening that app', (entry) => {
+    renderAt(entry);
 
-      expect(path()).toHaveTextContent(/^\/$/);
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    },
-  );
+    expect(path()).toHaveTextContent(/^\/$/);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
 
   it('shows a tab for each experience and switches between them', async () => {
     renderAt('/');
@@ -62,16 +68,6 @@ describe('App', () => {
 
     expect(screen.getByRole('tab', { name: 'Microchip', selected: true })).toBeInTheDocument();
     expect(screen.getByText('Full Stack Software Engineer Intern')).toBeVisible();
-  });
-
-  it('opens the world clock on the root address', async () => {
-    renderAt('/');
-    await userEvent.dblClick(desktop().getByRole('button', { name: 'World Clock' }));
-
-    expect(screen.getByRole('dialog', { name: 'World Clock' })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /^Local/ })).toBeInTheDocument();
-    expect(screen.getByRole('row', { name: /^Austin/ })).toBeInTheDocument();
-    expect(path()).toHaveTextContent(/^\/$/);
   });
 
   it('shows a tab for each project', async () => {
