@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { profile } from './content';
 import { CASCADE_ORIGIN_Y, CASCADE_STEP } from './desktop/windowManager';
@@ -138,24 +138,34 @@ describe('App', () => {
     expect(taskbar().queryByRole('button', { name: 'Resume' })).not.toBeInTheDocument();
   });
 
-  it('selects a desktop shortcut on click and keeps its address for a double-click', async () => {
+  it('selects a desktop shortcut on click and opens it in a new tab on double-click', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => null);
     renderAt('/');
-    const linkedIn = desktop().getByRole('link', { name: 'LinkedIn' });
-    const mail = desktop().getByRole('link', { name: 'Mail' });
+    const linkedIn = desktop().getByRole('button', { name: 'LinkedIn' });
+    const mail = desktop().getByRole('button', { name: 'Mail' });
 
     await userEvent.click(linkedIn);
 
     expect(linkedIn).toHaveAttribute('aria-pressed', 'true');
-    expect(linkedIn).toHaveAttribute(
-      'href',
+    expect(linkedIn).toHaveAttribute('draggable', 'false');
+    expect(mail).toHaveAttribute('draggable', 'false');
+    expect(open).not.toHaveBeenCalled();
+    expect(desktop().queryByRole('link', { name: 'LinkedIn' })).not.toBeInTheDocument();
+    expect(desktop().queryByRole('link', { name: 'Mail' })).not.toBeInTheDocument();
+
+    await userEvent.dblClick(linkedIn);
+    expect(open).toHaveBeenCalledWith(
       profile.links.find((link) => link.label === 'LinkedIn')?.url,
+      '_blank',
+      'noopener,noreferrer',
     );
-    expect(linkedIn).toHaveAttribute('target', '_blank');
-    expect(mail).toHaveAttribute('href', profile.links.find((link) => link.label === 'Mail')?.url);
-    expect(mail).not.toHaveAttribute('target');
+
+    await userEvent.dblClick(mail);
+    expect(open).toHaveBeenCalledTimes(1);
     expect(taskbar().queryByRole('link', { name: 'LinkedIn' })).not.toBeInTheDocument();
     expect(taskbar().queryByRole('link', { name: 'Mail' })).not.toBeInTheDocument();
     expect(taskbar().queryByRole('link', { name: 'Resume' })).not.toBeInTheDocument();
+    open.mockRestore();
   });
 
   it('minimizes to the taskbar and restores from that button', async () => {

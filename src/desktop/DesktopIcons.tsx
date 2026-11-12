@@ -7,11 +7,19 @@ type IconProps = {
   title: string;
   icon: string;
   selected: boolean;
-  href?: string;
+  onOpen: () => void;
 };
 
-function DesktopIcon({ id, title, icon, selected, href }: IconProps): JSX.Element {
-  const { dispatch, run } = useDesktop();
+function openShortcut(url: string): void {
+  if (url.startsWith('mailto:')) {
+    window.location.href = url;
+    return;
+  }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function DesktopIcon({ id, title, icon, selected, onOpen }: IconProps): JSX.Element {
+  const { dispatch } = useDesktop();
   // A touch tap opens on click, not pointerup, so the new window can't swallow the tap.
   const touch = useRef(false);
 
@@ -20,53 +28,26 @@ function DesktopIcon({ id, title, icon, selected, href }: IconProps): JSX.Elemen
   };
 
   const onClick = (event: MouseEvent) => {
-    const activate = event.detail === 0 || touch.current;
-    if (href) {
-      // A mouse click only selects. The second click of a double-click follows the link.
-      if (activate || event.detail >= 2) return;
-      event.preventDefault();
-      dispatch({ type: 'select', id });
-      return;
-    }
-    if (activate) {
-      run({ type: 'open', id });
+    // Keyboard activation (detail 0) and a tap open. A mouse click only selects.
+    if (event.detail === 0 || touch.current) {
+      onOpen();
       return;
     }
     dispatch({ type: 'select', id });
   };
-
-  const label = (
-    <>
-      <img src={icon} alt="" draggable={false} />
-      <span className="desktop-icon-label">{title}</span>
-    </>
-  );
-
-  if (href) {
-    return (
-      <a
-        className="desktop-icon"
-        href={href}
-        aria-pressed={selected}
-        {...(href.startsWith('mailto:') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}
-        onPointerDown={onPointerDown}
-        onClick={onClick}
-      >
-        {label}
-      </a>
-    );
-  }
 
   return (
     <button
       type="button"
       className="desktop-icon"
       aria-pressed={selected}
+      draggable={false}
       onPointerDown={onPointerDown}
       onClick={onClick}
-      onDoubleClick={() => run({ type: 'open', id })}
+      onDoubleClick={onOpen}
     >
-      {label}
+      <img src={icon} alt="" draggable={false} />
+      <span className="desktop-icon-label">{title}</span>
     </button>
   );
 }
@@ -84,13 +65,13 @@ function DesktopLinkIcon({
       title={link.title}
       icon={link.icon}
       selected={selected}
-      href={link.url}
+      onOpen={() => openShortcut(link.url)}
     />
   );
 }
 
 function DesktopIcons(): JSX.Element {
-  const { selectedId } = useDesktop();
+  const { selectedId, run } = useDesktop();
 
   return (
     <nav className="desktop-icons" aria-label="Desktop">
@@ -101,6 +82,7 @@ function DesktopIcons(): JSX.Element {
           title={app.title}
           icon={app.icon}
           selected={selectedId === app.id}
+          onOpen={() => run({ type: 'open', id: app.id })}
         />
       ))}
       {desktopLinks.map((link) => (
