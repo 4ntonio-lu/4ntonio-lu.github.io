@@ -167,7 +167,9 @@ function CryptoPrices(): JSX.Element {
           setQuotes(next);
           setUpdatedAt(at);
           setRefreshError(false);
-          writeCache(CRYPTO_QUOTE_CACHE, { quotes: next, updatedAt: at } satisfies QuoteBook);
+          if (Object.keys(next).length === CRYPTO_IDS.length) {
+            writeCache(CRYPTO_QUOTE_CACHE, { quotes: next, updatedAt: at } satisfies QuoteBook);
+          }
         })
         .catch((error: unknown) => {
           console.error('Error fetching CoinGecko data:', error);
@@ -207,7 +209,9 @@ function CryptoPrices(): JSX.Element {
           if (!active) return;
           setHistory(next);
           setChartError(false);
-          writeCache(CRYPTO_HISTORY_CACHE, next);
+          if (Object.keys(next).length === CRYPTO_IDS.length) {
+            writeCache(CRYPTO_HISTORY_CACHE, next);
+          }
         })
         .catch((error: unknown) => {
           console.error('Error fetching CoinGecko data:', error);

@@ -4,7 +4,17 @@ interface Env {
 	COINGECKO_APIKEY: string;
 }
 
-const COINS = new Set(['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin']);
+/** Keep this list identical to CRYPTO_IDS in src/market/coingecko.ts. */
+const COINS = new Set([
+	'bitcoin',
+	'ethereum',
+	'solana',
+	'ripple',
+	'binancecoin',
+	'dogecoin',
+	'cardano',
+	'chainlink',
+]);
 const EQUITIES = new Set<string>(EQUITY_SYMBOLS);
 
 const INFO_TTL_SECONDS = 30 * 60;

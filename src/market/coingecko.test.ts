@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  CRYPTO_IDS,
   fetchCryptoHistory,
   fetchCryptoQuotes,
   parseCoinInfo,
@@ -100,5 +101,36 @@ describe('coingecko client', () => {
     expect(urls.filter((url) => url.includes('type=chart'))).toHaveLength(1);
     expect(urls.filter((url) => url.includes('type=info'))).toHaveLength(1);
     expect(urls[0]).toContain('https://cloudflare-worker.4ntonio-lu.workers.dev');
+  });
+
+  it('keeps the coins that loaded when another id is rejected', async () => {
+    expect(CRYPTO_IDS).toEqual([
+      'bitcoin',
+      'ethereum',
+      'solana',
+      'ripple',
+      'binancecoin',
+      'dogecoin',
+      'cardano',
+      'chainlink',
+    ]);
+    vi.stubGlobal('fetch', (input: RequestInfo) => {
+      const url = String(input);
+      if (url.includes('id=cardano')) return Promise.resolve(new Response('no', { status: 400 }));
+      if (url.includes('type=info')) return Promise.resolve(Response.json(info));
+      return Promise.resolve(
+        Response.json({
+          prices: [
+            [1, 2],
+            [3, 4],
+          ],
+        }),
+      );
+    });
+
+    await expect(fetchCryptoQuotes(['bitcoin', 'cardano'])).resolves.toMatchObject({
+      bitcoin: { price: 73000 },
+    });
+    await expect(fetchCryptoHistory(['cardano'])).rejects.toThrow(/No market data/);
   });
 });

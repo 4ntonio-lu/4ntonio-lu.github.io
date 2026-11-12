@@ -1,11 +1,23 @@
 import type { LinePoint, Quote } from './types';
 import { fetchWorkerJson } from './worker';
 
-/** Coins the portfolio chart already follows. The worker serves these ids today. */
-export const CRYPTO_IDS = ['bitcoin', 'ethereum', 'solana', 'ripple', 'dogecoin'] as const;
+/**
+ * The coins on the chart, most recognizable first.
+ * Keep this list identical to COINS in cloudflare-worker/src/index.ts.
+ */
+export const CRYPTO_IDS = [
+  'bitcoin',
+  'ethereum',
+  'solana',
+  'ripple',
+  'binancecoin',
+  'dogecoin',
+  'cardano',
+  'chainlink',
+] as const;
 
-export const CRYPTO_QUOTE_CACHE = 'market:crypto:quotes:v2';
-export const CRYPTO_HISTORY_CACHE = 'market:crypto:history:v1';
+export const CRYPTO_QUOTE_CACHE = 'market:crypto:quotes:v3';
+export const CRYPTO_HISTORY_CACHE = 'market:crypto:history:v2';
 
 /** Same window the previous screen used before it refetched on mount. */
 export const CRYPTO_QUOTE_TTL_MS = 2 * 60 * 1000;
@@ -108,24 +120,28 @@ export function parseMarketChart(data: unknown): LinePoint[] {
   return points;
 }
 
-export async function fetchCryptoQuotes(ids: readonly string[]): Promise<Record<string, Quote>> {
-  const pairs = await Promise.all(
-    ids.map(async (id) => {
-      const data = await fetchWorkerJson({ id, type: 'info' });
-      return [id, parseCoinInfo(id, data)] as const;
-    }),
+async function settleById<T>(
+  ids: readonly string[],
+  load: (id: string) => Promise<T>,
+): Promise<Record<string, T>> {
+  const results = await Promise.allSettled(ids.map(async (id) => [id, await load(id)] as const));
+  const loaded = Object.fromEntries(
+    results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : [])),
   );
-  return Object.fromEntries(pairs);
+  if (Object.keys(loaded).length === 0) throw new Error('No market data');
+  return loaded;
+}
+
+export async function fetchCryptoQuotes(ids: readonly string[]): Promise<Record<string, Quote>> {
+  return settleById(ids, async (id) =>
+    parseCoinInfo(id, await fetchWorkerJson({ id, type: 'info' })),
+  );
 }
 
 export async function fetchCryptoHistory(
   ids: readonly string[],
 ): Promise<Record<string, LinePoint[]>> {
-  const pairs = await Promise.all(
-    ids.map(async (id) => {
-      const data = await fetchWorkerJson({ id, type: 'chart' });
-      return [id, parseMarketChart(data)] as const;
-    }),
+  return settleById(ids, async (id) =>
+    parseMarketChart(await fetchWorkerJson({ id, type: 'chart' })),
   );
-  return Object.fromEntries(pairs);
 }
