@@ -33,6 +33,35 @@ describe('coingecko client', () => {
       image: 'https://example.com/btc.png',
       asOf: 10,
     });
+    expect(
+      parseCoinInfo(
+        'bitcoin',
+        {
+          ...info,
+          market_cap_rank: 1,
+          market_data: {
+            ...info.market_data,
+            high_24h: { usd: 74695 },
+            low_24h: { usd: 73357 },
+            total_volume: { usd: 23.5e9 },
+            price_change_24h: -262.4,
+            price_change_percentage_7d: 4.2,
+            circulating_supply: 19.8e6,
+            ath: { usd: 73750 },
+          },
+        },
+        10,
+      ),
+    ).toMatchObject({
+      high24h: 74695,
+      low24h: 73357,
+      volume24h: 23.5e9,
+      change24h: -262.4,
+      changePct7d: 4.2,
+      circulatingSupply: 19.8e6,
+      ath: 73750,
+      marketCapRank: 1,
+    });
     expect(parseMarketChart({ prices: [[1, 2], [3, 4], 'nope'] })).toEqual([
       { t: 1, price: 2 },
       { t: 3, price: 4 },

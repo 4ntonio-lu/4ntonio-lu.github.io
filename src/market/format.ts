@@ -6,11 +6,22 @@ export function formatUsd(price: number): string {
   });
 }
 
+export function formatCompact(value: number): string {
+  if (value >= 1e12) return `${(value / 1e12).toFixed(1)}t`;
+  if (value >= 1e9) return `${(value / 1e9).toFixed(1)}b`;
+  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}m`;
+  return value.toFixed(2);
+}
+
 export function formatMarketCap(marketCap: number): string {
-  if (marketCap >= 1e12) return `${(marketCap / 1e12).toFixed(1)}t`;
-  if (marketCap >= 1e9) return `${(marketCap / 1e9).toFixed(1)}b`;
-  if (marketCap >= 1e6) return `${(marketCap / 1e6).toFixed(1)}m`;
-  return marketCap.toFixed(2);
+  return formatCompact(marketCap);
+}
+
+export function formatSignedUsd(value: number): string {
+  const body = `$${formatUsd(Math.abs(value))}`;
+  if (value > 0) return `+${body}`;
+  if (value < 0) return `-${body}`;
+  return body;
 }
 
 export function formatSignedPercent(value: number): string {

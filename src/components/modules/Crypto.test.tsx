@@ -33,6 +33,7 @@ describe('Crypto', () => {
           name: 'Bitcoin',
           price: 73000,
           changePct24h: 1.5,
+          high24h: 74695,
           marketCap: 1.48e12,
           image: 'https://example.com/btc.png',
           asOf: now,
@@ -63,6 +64,17 @@ describe('Crypto', () => {
     expect(screen.getByText(/this range/).closest('p')).toHaveTextContent('20.00%');
     expect(screen.getByTestId('price-chart')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Last updated');
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
+      '24h high',
+    );
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
+      '$74,695.00',
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hide stats' }));
+    expect(screen.queryByRole('complementary', { name: 'Market stats' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show stats' }));
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toBeInTheDocument();
     expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
 

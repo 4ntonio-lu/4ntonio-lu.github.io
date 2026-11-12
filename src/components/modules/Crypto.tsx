@@ -44,9 +44,11 @@ import {
   sliceByDays,
 } from '../../market/series';
 import type { LineRangeId } from '../../market/series';
+import { cryptoStatRows } from '../../market/stats';
 import type { LinePoint, Quote, QuoteBook } from '../../market/types';
 import RangeButtons from '../market/RangeButtons';
 import RefreshStatus from '../market/RefreshStatus';
+import StatsPanel from '../market/StatsPanel';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
@@ -146,6 +148,7 @@ function CryptoPrices(): JSX.Element {
   const [refreshError, setRefreshError] = useState(false);
   const [chartError, setChartError] = useState(false);
   const [range, setRange] = useState<LineRangeId>('1Y');
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -221,7 +224,7 @@ function CryptoPrices(): JSX.Element {
   return (
     <WindowBox
       name="Cryptocurrencies"
-      width={0.64}
+      width={0.82}
       content={
         <div className="m-1 p-1 sm:m-3">
           {!quotes ? (
@@ -272,32 +275,45 @@ function CryptoPrices(): JSX.Element {
                             High ${formatUsd(bounds.high)} · Low ${formatUsd(bounds.low)}
                           </p>
                         )}
+                        <button
+                          type="button"
+                          className="button-shadow px-2 py-0.5 text-sm sm:ml-auto"
+                          aria-pressed={showStats}
+                          onClick={() => setShowStats((open) => !open)}
+                        >
+                          {showStats ? 'Hide stats' : 'Show stats'}
+                        </button>
                       </div>
-                      {points.length >= 2 ? (
-                        <>
-                          <p className="sr-only">
-                            {data.name} is {formatSignedPercent(rangeMove ?? 0)} over {range}, from
-                            ${formatUsd(points[0].price)} to $
-                            {formatUsd(points[points.length - 1].price)}. The crosshair reads each
-                            close from {formatTooltipDate(points[0].t)} through{' '}
-                            {formatTooltipDate(points[points.length - 1].t)}.
-                            {updatedAt ? ` Last price update ${formatClock(updatedAt)}.` : ''}
-                          </p>
-                          <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
-                            <Line
-                              data={chartData(points, days)}
-                              options={chartOptions(points)}
-                              plugins={[crosshairPlugin]}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                          {chartError
-                            ? "Couldn't load the chart. Prices above are still updating."
-                            : 'Loading chart…'}
-                        </p>
-                      )}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                        <div className="min-w-0 flex-1">
+                          {points.length >= 2 ? (
+                            <>
+                              <p className="sr-only">
+                                {data.name} is {formatSignedPercent(rangeMove ?? 0)} over {range},
+                                from ${formatUsd(points[0].price)} to $
+                                {formatUsd(points[points.length - 1].price)}. The crosshair reads
+                                each close from {formatTooltipDate(points[0].t)} through{' '}
+                                {formatTooltipDate(points[points.length - 1].t)}.
+                                {updatedAt ? ` Last price update ${formatClock(updatedAt)}.` : ''}
+                              </p>
+                              <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
+                                <Line
+                                  data={chartData(points, days)}
+                                  options={chartOptions(points)}
+                                  plugins={[crosshairPlugin]}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
+                              {chartError
+                                ? "Couldn't load the chart. Prices above are still updating."
+                                : 'Loading chart…'}
+                            </p>
+                          )}
+                        </div>
+                        {showStats && <StatsPanel rows={cryptoStatRows(data)} />}
+                      </div>
                     </TabPanel>
                   );
                 })}

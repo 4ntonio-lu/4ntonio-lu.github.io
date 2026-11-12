@@ -6,6 +6,17 @@ export type Quote = {
   changePct24h: number;
   marketCap?: number;
   image?: string;
+  high24h?: number;
+  low24h?: number;
+  volume24h?: number;
+  change24h?: number;
+  changePct7d?: number;
+  changePct30d?: number;
+  changePct1y?: number;
+  circulatingSupply?: number;
+  ath?: number;
+  atl?: number;
+  marketCapRank?: number;
   asOf: number;
 };
 
