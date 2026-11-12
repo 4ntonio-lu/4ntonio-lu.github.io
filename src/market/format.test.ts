@@ -5,6 +5,7 @@ import {
   formatSignedPercent,
   formatTooltipDate,
   formatUsd,
+  formatVolume,
 } from './format';
 
 describe('market format', () => {
@@ -20,6 +21,7 @@ describe('market format', () => {
     expect(formatSignedPercent(1.2)).toBe('+1.20%');
     expect(formatSignedPercent(-0.5)).toBe('-0.50%');
     expect(formatSignedPercent(0)).toBe('0.00%');
+    expect(formatVolume(3_012_000)).toBe('3.0m');
   });
 
   it('formats chart dates in a fixed locale', () => {

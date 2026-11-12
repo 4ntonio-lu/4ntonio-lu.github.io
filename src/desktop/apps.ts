@@ -44,6 +44,13 @@ export const apps = [
     path: '/crypto',
     icon: img.crypto,
   },
+  {
+    id: 'stocks',
+    title: 'Stocks',
+    windowName: 'Stocks',
+    path: '/stocks',
+    icon: img.stocks,
+  },
 ] as const;
 
 export type DesktopApp = (typeof apps)[number];

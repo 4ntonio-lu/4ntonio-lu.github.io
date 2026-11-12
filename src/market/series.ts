@@ -10,8 +10,24 @@ export const LINE_RANGES = [
 
 export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
 
+/** Daily candles, sliced on the client from one five-year download. */
+export const EQUITY_RANGES = [
+  { id: '1M', label: '1M', days: 30 },
+  { id: '3M', label: '3M', days: 90 },
+  { id: '6M', label: '6M', days: 180 },
+  { id: '1Y', label: '1Y', days: 365 },
+  { id: '5Y', label: '5Y', days: 1825 },
+] as const;
+
+export type EquityRangeId = (typeof EQUITY_RANGES)[number]['id'];
+
 export function rangeDays(id: LineRangeId): number {
   const range = LINE_RANGES.find((item) => item.id === id);
+  return range ? range.days : 365;
+}
+
+export function equityRangeDays(id: EquityRangeId): number {
+  const range = EQUITY_RANGES.find((item) => item.id === id);
   return range ? range.days : 365;
 }
 

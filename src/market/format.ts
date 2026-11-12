@@ -55,3 +55,10 @@ export function formatTooltipDate(timestamp: number, locales?: Intl.LocalesArgum
 export function formatClock(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString();
 }
+
+export function formatVolume(volume: number): string {
+  if (volume >= 1e9) return `${(volume / 1e9).toFixed(1)}b`;
+  if (volume >= 1e6) return `${(volume / 1e6).toFixed(1)}m`;
+  if (volume >= 1e3) return `${(volume / 1e3).toFixed(1)}k`;
+  return String(Math.round(volume));
+}

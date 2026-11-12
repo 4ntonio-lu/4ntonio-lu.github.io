@@ -1,4 +1,8 @@
-export const MARKET_WORKER_URL = 'https://cloudflare-worker.4ntonio-lu.workers.dev';
+const configuredWorker = import.meta.env.VITE_MARKET_WORKER;
+export const MARKET_WORKER_URL =
+  typeof configuredWorker === 'string' && configuredWorker.length > 0
+    ? configuredWorker
+    : 'https://cloudflare-worker.4ntonio-lu.workers.dev';
 
 const inflight = new Map<string, Promise<unknown>>();
 
