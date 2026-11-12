@@ -9,6 +9,7 @@ import { CandlestickController, CandlestickElement } from 'chartjs-chart-financi
 import { useEffect, useState, JSX } from 'react';
 import { Chart } from 'react-chartjs-2';
 import WindowBox from '../elements/WindowBox';
+import { img } from '../../assets/images/img';
 import { crosshairPlugin, win95Font, win95Tooltip } from '../../market/chartChrome';
 import { readCache, writeCache } from '../../market/cache';
 import {
@@ -310,14 +311,14 @@ function Stocks(): JSX.Element {
               />
             </div>
           </div>
-          <div className="mt-4 text-center text-xs text-[#272727]">
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#272727]">
+            <span className="text-[0.8rem] font-semibold">Powered by</span>
             <a
               href={`https://finance.yahoo.com/quote/${equity.symbol}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold"
             >
-              Data: Yahoo Finance
+              <img src={img.yahoo} alt="Yahoo Finance" className="relative top-[3px] h-5" />
             </a>
           </div>
         </div>

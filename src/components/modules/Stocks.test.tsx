@@ -57,7 +57,8 @@ describe('Stocks', () => {
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High');
     expect(screen.getByTestId('candle-chart')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Data: Yahoo Finance' })).toHaveAttribute(
+    expect(screen.getByText('Powered by')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Yahoo Finance' })).toHaveAttribute(
       'href',
       'https://finance.yahoo.com/quote/AAPL',
     );
