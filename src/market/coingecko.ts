@@ -16,8 +16,25 @@ export const CRYPTO_IDS = [
   'chainlink',
 ] as const;
 
-export const CRYPTO_QUOTE_CACHE = 'market:crypto:quotes:v3';
-export const CRYPTO_HISTORY_CACHE = 'market:crypto:history:v2';
+/** Tab labels. The quote replaces these once that coin has been opened. */
+export const CRYPTO_NAMES: Record<(typeof CRYPTO_IDS)[number], string> = {
+  bitcoin: 'Bitcoin',
+  ethereum: 'Ethereum',
+  solana: 'Solana',
+  ripple: 'XRP',
+  binancecoin: 'BNB',
+  dogecoin: 'Dogecoin',
+  cardano: 'Cardano',
+  chainlink: 'Chainlink',
+};
+
+export function cryptoQuoteCacheKey(id: string): string {
+  return `market:crypto:quote:v4:${id}`;
+}
+
+export function cryptoHistoryCacheKey(id: string): string {
+  return `market:crypto:history:v3:${id}`;
+}
 
 /** Same window the previous screen used before it refetched on mount. */
 export const CRYPTO_QUOTE_TTL_MS = 2 * 60 * 1000;

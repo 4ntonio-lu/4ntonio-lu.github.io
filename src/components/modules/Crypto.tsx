@@ -10,7 +10,7 @@ import {
   type ChartOptions,
 } from 'chart.js';
 import { TabList, TabPanel, Tabs, Tab } from 'react-tabs';
-import { useEffect, useState, JSX } from 'react';
+import { useEffect, useRef, useState, JSX } from 'react';
 import { Line } from 'react-chartjs-2';
 import WindowBox from '../elements/WindowBox';
 import { img } from '../../assets/images/img';
@@ -20,11 +20,12 @@ import { waitForMinimumLoad } from '../../market/loading';
 import { readCache, writeCache } from '../../market/cache';
 import { crosshairPlugin, win95Font, win95Tooltip } from '../../market/chartChrome';
 import {
-  CRYPTO_HISTORY_CACHE,
   CRYPTO_HISTORY_TTL_MS,
   CRYPTO_IDS,
-  CRYPTO_QUOTE_CACHE,
+  CRYPTO_NAMES,
   CRYPTO_QUOTE_TTL_MS,
+  cryptoHistoryCacheKey,
+  cryptoQuoteCacheKey,
   fetchCryptoHistory,
   fetchCryptoQuotes,
 } from '../../market/coingecko';
@@ -44,7 +45,7 @@ import {
 } from '../../market/series';
 import type { LineRangeId } from '../../market/series';
 import { cryptoStatRows } from '../../market/stats';
-import type { LinePoint, Quote, QuoteBook } from '../../market/types';
+import type { LinePoint, Quote } from '../../market/types';
 import RangeButtons from '../market/RangeButtons';
 import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
@@ -145,35 +146,43 @@ function ChangeText({ value, caption }: { value: number; caption: string }): JSX
 }
 
 function CryptoPrices(): JSX.Element {
-  const [quotes, setQuotes] = useState<Record<string, Quote> | null>(null);
-  const [history, setHistory] = useState<Record<string, LinePoint[]> | null>(null);
-  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [coinId, setCoinId] = useState<(typeof CRYPTO_IDS)[number]>(CRYPTO_IDS[0]);
+  const [quotes, setQuotes] = useState<Record<string, Quote>>({});
+  const [history, setHistory] = useState<Record<string, LinePoint[]>>({});
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [failedId, setFailedId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
-  const [chartError, setChartError] = useState(false);
+  const [chartErrorId, setChartErrorId] = useState<string | null>(null);
   const [range, setRange] = useState<LineRangeId>('1Y');
   const [showStats, setShowStats] = useState(true);
+  const coinRef = useRef(coinId);
+  coinRef.current = coinId;
 
   useEffect(() => {
-    let active = true;
+    try {
+      localStorage.removeItem('cryptoData');
+    } catch {
+      // Ignore private-mode storage.
+    }
 
-    const refreshPrices = () => {
+    let active = true;
+    const stop = createCryptoRefreshSchedule(() => {
+      const id = coinRef.current;
       const started = Date.now();
       setRefreshing(true);
-      void fetchCryptoQuotes(CRYPTO_IDS)
+      void fetchCryptoQuotes([id])
         .then((next) => {
+          const quote = next[id];
+          if (!quote) throw new Error('No market data');
+          writeCache(cryptoQuoteCacheKey(id), quote);
           if (!active) return;
-          const at = Date.now();
-          setQuotes(next);
-          setUpdatedAt(at);
-          setRefreshError(false);
-          if (Object.keys(next).length === CRYPTO_IDS.length) {
-            writeCache(CRYPTO_QUOTE_CACHE, { quotes: next, updatedAt: at } satisfies QuoteBook);
-          }
+          setQuotes((current) => ({ ...current, [id]: quote }));
+          if (coinRef.current === id) setRefreshError(false);
         })
         .catch((error: unknown) => {
           console.error('Error fetching CoinGecko data:', error);
-          if (!active) return;
+          if (!active || coinRef.current !== id) return;
           setRefreshError(true);
         })
         .finally(() => {
@@ -181,53 +190,76 @@ function CryptoPrices(): JSX.Element {
             if (active) setRefreshing(false);
           });
         });
-    };
-
-    try {
-      localStorage.removeItem('cryptoData');
-    } catch {
-      // Ignore private-mode storage.
-    }
-
-    const cachedQuotes = readCache<QuoteBook>(CRYPTO_QUOTE_CACHE, CRYPTO_QUOTE_TTL_MS);
-    if (cachedQuotes) {
-      setQuotes(cachedQuotes.quotes);
-      setUpdatedAt(cachedQuotes.updatedAt);
-    } else {
-      refreshPrices();
-    }
-
-    const cachedHistory = readCache<Record<string, LinePoint[]>>(
-      CRYPTO_HISTORY_CACHE,
-      CRYPTO_HISTORY_TTL_MS,
-    );
-    if (cachedHistory) {
-      setHistory(cachedHistory);
-    } else {
-      void fetchCryptoHistory(CRYPTO_IDS)
-        .then((next) => {
-          if (!active) return;
-          setHistory(next);
-          setChartError(false);
-          if (Object.keys(next).length === CRYPTO_IDS.length) {
-            writeCache(CRYPTO_HISTORY_CACHE, next);
-          }
-        })
-        .catch((error: unknown) => {
-          console.error('Error fetching CoinGecko data:', error);
-          if (!active) return;
-          setChartError(true);
-        });
-    }
-
-    const stop = createCryptoRefreshSchedule(refreshPrices);
+    });
     return () => {
       active = false;
       stop();
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const id = coinId;
+    const cachedQuote = readCache<Quote>(cryptoQuoteCacheKey(id), CRYPTO_QUOTE_TTL_MS);
+    const cachedHistory = readCache<LinePoint[]>(cryptoHistoryCacheKey(id), CRYPTO_HISTORY_TTL_MS);
+    if (cachedQuote) setQuotes((current) => ({ ...current, [id]: cachedQuote }));
+    if (cachedHistory) setHistory((current) => ({ ...current, [id]: cachedHistory }));
+
+    if (!cachedQuote) {
+      const started = Date.now();
+      setLoadingId(id);
+      setFailedId((current) => (current === id ? null : current));
+      void fetchCryptoQuotes([id])
+        .then((next) => {
+          const quote = next[id];
+          if (!quote) throw new Error('No market data');
+          writeCache(cryptoQuoteCacheKey(id), quote);
+          if (!active) return;
+          setQuotes((current) => ({ ...current, [id]: quote }));
+          setRefreshError(false);
+        })
+        .catch((error: unknown) => {
+          console.error('Error fetching CoinGecko data:', error);
+          if (!active) return;
+          setFailedId(id);
+        })
+        .finally(() => {
+          void waitForMinimumLoad(started).then(() => {
+            if (active) setLoadingId((current) => (current === id ? null : current));
+          });
+        });
+    } else {
+      setLoadingId((current) => (current === id ? null : current));
+    }
+
+    if (!cachedHistory) {
+      setChartErrorId((current) => (current === id ? null : current));
+      void fetchCryptoHistory([id])
+        .then((next) => {
+          const points = next[id];
+          if (!points) throw new Error('No market data');
+          writeCache(cryptoHistoryCacheKey(id), points);
+          if (!active) return;
+          setHistory((current) => ({ ...current, [id]: points }));
+        })
+        .catch((error: unknown) => {
+          console.error('Error fetching CoinGecko data:', error);
+          if (!active) return;
+          setChartErrorId(id);
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [coinId]);
+
   const days = rangeDays(range);
+  const quote = quotes[coinId];
+  const points = sliceByDays(history[coinId] ?? [], days);
+  const loading = loadingId === coinId && !quote;
+  const failed = failedId === coinId && !quote;
+  const chartError = chartErrorId === coinId && quote != null && points.length < 2;
 
   return (
     <WindowBox
@@ -235,108 +267,110 @@ function CryptoPrices(): JSX.Element {
       width={0.82}
       content={
         <div className="m-1 p-1 sm:m-3">
-          {!quotes ? (
-            <div className="px-6 py-8">
-              {refreshError && !refreshing ? (
-                <p className="text-center text-xl text-[#272727]">Couldn't load prices.</p>
-              ) : (
-                <RefreshStatus refreshing updatedAt={null} error={false} />
-              )}
-            </div>
-          ) : (
-            <Tabs>
-              <TabList>
-                {Object.entries(quotes).map(([id, info]) => (
-                  <Tab key={id}>{info.name}</Tab>
-                ))}
-              </TabList>
-              <div className="tab-panels">
-                {Object.entries(quotes).map(([id, data]) => {
-                  const points = sliceByDays(history?.[id] ?? [], days);
-                  const rangeMove =
-                    points.length >= 2
-                      ? percentChange(points[0].price, points[points.length - 1].price)
-                      : null;
-                  const bounds = seriesBounds(points.map((point) => point.price));
-                  return (
-                    <TabPanel key={id}>
-                      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                        {data.image && <img src={data.image} alt="" className="h-7 w-7" />}
-                        <h1 className="m-0 text-lg leading-none">{data.name}</h1>
-                        <p className="m-0 text-lg leading-none">${formatUsd(data.price)}</p>
-                        <ChangeText value={data.changePct24h} caption="24h" />
-                      </div>
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <RangeButtons
-                          ranges={LINE_RANGES}
-                          value={range}
-                          onChange={(id) => setRange(id as LineRangeId)}
-                        />
-                        <RangeSummary
-                          change={rangeMove}
-                          high={bounds?.high ?? null}
-                          low={bounds?.low ?? null}
-                        />
-                        <button
-                          type="button"
-                          className="button-shadow px-2 py-0.5 text-sm sm:ml-auto"
-                          aria-pressed={showStats}
-                          onClick={() => setShowStats((open) => !open)}
-                        >
-                          {showStats ? 'Hide stats' : 'Show stats'}
-                        </button>
-                      </div>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                        <div className="min-w-0 flex-1">
-                          {points.length >= 2 ? (
-                            <>
-                              <p className="sr-only">
-                                {data.name} is {formatSignedPercent(rangeMove ?? 0)} over {range},
-                                from ${formatUsd(points[0].price)} to $
-                                {formatUsd(points[points.length - 1].price)}. The crosshair reads
-                                each close from {formatTooltipDate(points[0].t)} through{' '}
-                                {formatTooltipDate(points[points.length - 1].t)}.
-                                {updatedAt ? ` Last price update ${formatClock(updatedAt)}.` : ''}
-                              </p>
-                              <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
-                                <Line
-                                  data={chartData(points, days)}
-                                  options={chartOptions(points)}
-                                  plugins={[crosshairPlugin]}
-                                />
-                              </div>
-                            </>
-                          ) : (
-                            <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                              {chartError
-                                ? "Couldn't load the chart. Prices above are still updating."
-                                : 'Loading chart…'}
-                            </p>
+          <Tabs
+            selectedIndex={Math.max(
+              0,
+              CRYPTO_IDS.findIndex((id) => id === coinId),
+            )}
+            onSelect={(index) => setCoinId(CRYPTO_IDS[index])}
+          >
+            <TabList>
+              {CRYPTO_IDS.map((id) => (
+                <Tab key={id}>{quotes[id]?.name ?? CRYPTO_NAMES[id]}</Tab>
+              ))}
+            </TabList>
+            <div className="tab-panels">
+              {CRYPTO_IDS.map((id) => {
+                const open = quotes[id];
+                const series = id === coinId ? points : [];
+                const rangeMove =
+                  series.length >= 2
+                    ? percentChange(series[0].price, series[series.length - 1].price)
+                    : null;
+                const bounds = seriesBounds(series.map((point) => point.price));
+                return (
+                  <TabPanel key={id}>
+                    {id === coinId && (
+                      <div className="min-w-0">
+                        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {open?.image && <img src={open.image} alt="" className="h-7 w-7" />}
+                          <h1 className="m-0 text-lg leading-none">
+                            {open?.name ?? CRYPTO_NAMES[id]}
+                          </h1>
+                          {open && (
+                            <p className="m-0 text-lg leading-none">${formatUsd(open.price)}</p>
                           )}
+                          {open && <ChangeText value={open.changePct24h} caption="24h" />}
                         </div>
-                        {showStats && <StatsPanel rows={cryptoStatRows(data)} />}
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <RangeButtons
+                            ranges={LINE_RANGES}
+                            value={range}
+                            onChange={(next) => setRange(next as LineRangeId)}
+                          />
+                          <RangeSummary
+                            change={rangeMove}
+                            high={bounds?.high ?? null}
+                            low={bounds?.low ?? null}
+                          />
+                          <button
+                            type="button"
+                            className="button-shadow px-2 py-0.5 text-sm sm:ml-auto"
+                            aria-pressed={showStats}
+                            onClick={() => setShowStats((shown) => !shown)}
+                          >
+                            {showStats ? 'Hide stats' : 'Show stats'}
+                          </button>
+                        </div>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                          <div className="min-w-0 flex-1">
+                            {series.length >= 2 && open ? (
+                              <>
+                                <p className="sr-only">
+                                  {open.name} is {formatSignedPercent(rangeMove ?? 0)} over {range},
+                                  from ${formatUsd(series[0].price)} to $
+                                  {formatUsd(series[series.length - 1].price)}. The crosshair reads
+                                  each close from {formatTooltipDate(series[0].t)} through{' '}
+                                  {formatTooltipDate(series[series.length - 1].t)}.
+                                  {open.asOf ? ` Last price update ${formatClock(open.asOf)}.` : ''}
+                                </p>
+                                <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
+                                  <Line
+                                    data={chartData(series, days)}
+                                    options={chartOptions(series)}
+                                    plugins={[crosshairPlugin]}
+                                  />
+                                </div>
+                              </>
+                            ) : (
+                              <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
+                                {chartError
+                                  ? "Couldn't load the chart. Prices above are still updating."
+                                  : 'Loading chart…'}
+                              </p>
+                            )}
+                          </div>
+                          {showStats && open && <StatsPanel rows={cryptoStatRows(open)} />}
+                        </div>
+                        <RefreshStatus
+                          refreshing={loading || refreshing}
+                          updatedAt={open?.asOf ?? null}
+                          error={failed || refreshError}
+                          errorText={`Couldn't load ${CRYPTO_NAMES[id]}.`}
+                        />
                       </div>
-                    </TabPanel>
-                  );
-                })}
-              </div>
-            </Tabs>
-          )}
-          {quotes && (
-            <>
-              <RefreshStatus refreshing={refreshing} updatedAt={updatedAt} error={refreshError} />
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#272727]">
-                <span className="text-[0.8rem] font-semibold">Powered by</span>
-                <a
-                  href="https://www.coingecko.com/en/api"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <img src={img.coingecko} alt="CoinGecko" className="relative top-[3px] h-5" />
-                </a>
-              </div>
-            </>
-          )}
+                    )}
+                  </TabPanel>
+                );
+              })}
+            </div>
+          </Tabs>
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#272727]">
+            <span className="text-[0.8rem] font-semibold">Powered by</span>
+            <a href="https://www.coingecko.com/en/api" target="_blank" rel="noopener noreferrer">
+              <img src={img.coingecko} alt="CoinGecko" className="relative top-[3px] h-5" />
+            </a>
+          </div>
         </div>
       }
     />
