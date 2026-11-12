@@ -11,7 +11,7 @@ function statusText(refreshing: boolean, updatedAt: number | null, error: boolea
   if (refreshing && updatedAt) return 'Updating prices…';
   if (refreshing) return 'Loading prices…';
   if (error && updatedAt) return `Couldn't refresh. Showing prices from ${formatClock(updatedAt)}.`;
-  if (error) return "Couldn't load prices. The next try is automatic.";
+  if (error) return "Couldn't load prices.";
   if (updatedAt) return `Last updated ${formatClock(updatedAt)}`;
   return 'Waiting for prices';
 }

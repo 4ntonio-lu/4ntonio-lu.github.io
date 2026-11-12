@@ -1,32 +1,24 @@
-/**
- * Delay before the next crypto price refresh.
- * `minutes = min(0.5 * attempt², 240)`. The caller advances `attempt` twice
- * per cycle, which is the schedule the app already ships with.
- */
-export function cryptoRefreshDelayMinutes(attempt: number): number {
-  return Math.min(0.5 * attempt * attempt, 240);
-}
+/** Gaps between automatic price refreshes. Three ticks per page load, then stop. */
+export const CRYPTO_REFRESH_GAPS_MS = [15_000, 30_000, 45_000] as const;
 
 /**
- * Starts the crypto price timer. `onRefresh` runs on each tick; it does not
- * change the delays. Call the returned function to cancel the pending tick.
+ * Schedules at most three price refreshes: 15s after load, 30s after that,
+ * then 45s after that. There is no further timer.
  */
 export function createCryptoRefreshSchedule(onRefresh: () => void): () => void {
-  let attempt = 1;
-  let timeoutId: ReturnType<typeof setTimeout>;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let index = 0;
 
-  const scheduleNextFetch = () => {
-    const minutes = cryptoRefreshDelayMinutes(attempt++);
-    timeoutId = setTimeout(
-      () => {
-        onRefresh();
-        attempt += 1;
-        scheduleNextFetch();
-      },
-      minutes * 60 * 1000,
-    );
+  const scheduleNext = () => {
+    if (index >= CRYPTO_REFRESH_GAPS_MS.length) return;
+    const delay = CRYPTO_REFRESH_GAPS_MS[index];
+    index += 1;
+    timeoutId = setTimeout(() => {
+      onRefresh();
+      scheduleNext();
+    }, delay);
   };
 
-  scheduleNextFetch();
+  scheduleNext();
   return () => clearTimeout(timeoutId);
 }

@@ -222,7 +222,7 @@ function CryptoPrices(): JSX.Element {
         <div className="m-1 p-1 sm:m-3">
           {!quotes ? (
             <div role="status" className="px-6 py-10 text-center text-xl text-[#272727]">
-              {refreshError ? "Couldn't load prices. The next try is automatic." : 'Loading...'}
+              {refreshError ? "Couldn't load prices." : 'Loading...'}
             </div>
           ) : (
             <Tabs>
