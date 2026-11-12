@@ -126,20 +126,7 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
       },
     },
     scales: {
-      x: {
-        type: 'linear',
-        offset: true,
-        grid: { color: '#b5b5b5' },
-        ticks: {
-          maxTicksLimit: 6,
-          color: '#272727',
-          font: { family: win95Font, size: 12 },
-          callback: (value) =>
-            typeof value === 'number'
-              ? formatAxisDate(value, days, undefined, axisDetail(days))
-              : '',
-        },
-      },
+      x: timeScale(candles, days),
       y: {
         grid: { color: '#b5b5b5' },
         ticks: {
@@ -156,6 +143,41 @@ function axisDetail(days: number): 'auto' | 'day' | 'time' {
   if (days <= 1) return 'time';
   if (days <= 120) return 'day';
   return 'auto';
+}
+
+/**
+ * Domain for the horizontal scale. A linear axis otherwise rounds to nice
+ * tick marks and then pads by the tick count, which leaves empty gutters
+ * beside the series. Half the end gaps is the room one candle needs.
+ */
+function plotDomain(candles: Candle[]): { min: number; max: number } {
+  const first = candles[0]?.t ?? 0;
+  const last = candles[candles.length - 1]?.t ?? first;
+  const leftGap = candles.length > 1 ? candles[1].t - first : 86_400_000;
+  const rightGap = candles.length > 1 ? last - candles[candles.length - 2].t : 86_400_000;
+  return {
+    min: first - Math.max(leftGap, 1) / 2,
+    max: last + Math.max(rightGap, 1) / 2,
+  };
+}
+
+function timeScale(candles: Candle[], days: number) {
+  const { min, max } = plotDomain(candles);
+  return {
+    type: 'linear' as const,
+    min,
+    max,
+    offset: false,
+    bounds: 'data' as const,
+    grid: { color: '#b5b5b5' },
+    ticks: {
+      maxTicksLimit: 6,
+      color: '#272727',
+      font: { family: win95Font, size: 12 },
+      callback: (value: string | number) =>
+        typeof value === 'number' ? formatAxisDate(value, days, undefined, axisDetail(days)) : '',
+    },
+  };
 }
 
 function lineChartData(candles: Candle[]): ChartData<'line'> {
@@ -216,20 +238,7 @@ function lineChartOptions(candles: Candle[], days: number): ChartOptions<'line'>
       },
     },
     scales: {
-      x: {
-        type: 'linear',
-        offset: true,
-        grid: { color: '#b5b5b5' },
-        ticks: {
-          maxTicksLimit: 6,
-          color: '#272727',
-          font: { family: win95Font, size: 12 },
-          callback: (value) =>
-            typeof value === 'number'
-              ? formatAxisDate(value, days, undefined, axisDetail(days))
-              : '',
-        },
-      },
+      x: timeScale(candles, days),
       y: {
         grid: { color: '#b5b5b5' },
         ticks: {
@@ -384,25 +393,31 @@ function Stocks(): JSX.Element {
                           value={range}
                           onChange={(id) => setRange(id as EquityRangeId)}
                         />
-                        <div className="flex gap-1" role="group" aria-label="Chart style">
-                          <button
-                            type="button"
-                            className="button-shadow px-2 py-0.5 text-sm text-[#272727]"
-                            aria-pressed={chartStyle === 'candles'}
-                            onClick={() => setChartStyle('candles')}
+                        <div className="flex items-center gap-2">
+                          <RangeSummary change={rangeMove} high={high} low={low} />
+                          <div
+                            className="flex gap-1 border-2 border-b-[#808080] border-l-[#ffffff] border-r-[#808080] border-t-[#ffffff] bg-[#c0c0c0] p-0.5"
+                            role="group"
+                            aria-label="Chart style"
                           >
-                            Candles
-                          </button>
-                          <button
-                            type="button"
-                            className="button-shadow px-2 py-0.5 text-sm text-[#272727]"
-                            aria-pressed={chartStyle === 'line'}
-                            onClick={() => setChartStyle('line')}
-                          >
-                            Line
-                          </button>
+                            <button
+                              type="button"
+                              className="button-shadow px-2 py-0.5 text-sm text-[#272727]"
+                              aria-pressed={chartStyle === 'candles'}
+                              onClick={() => setChartStyle('candles')}
+                            >
+                              Candles
+                            </button>
+                            <button
+                              type="button"
+                              className="button-shadow px-2 py-0.5 text-sm text-[#272727]"
+                              aria-pressed={chartStyle === 'line'}
+                              onClick={() => setChartStyle('line')}
+                            >
+                              Line
+                            </button>
+                          </div>
                         </div>
-                        <RangeSummary change={rangeMove} high={high} low={low} />
                         <button
                           type="button"
                           className="button-shadow px-2 py-0.5 text-sm sm:ml-auto"

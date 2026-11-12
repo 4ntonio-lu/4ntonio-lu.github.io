@@ -5,12 +5,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DesktopProvider } from '../../desktop/DesktopProvider';
 import { clearMarketMemory, writeCache } from '../../market/cache';
 import { equityCacheKey, type EquitySnapshot } from '../../market/equities';
+import { equityCandles } from '../../market/series';
 import Stocks from './Stocks';
 
+type ChartScale = {
+  min?: number;
+  max?: number;
+  offset?: boolean;
+  bounds?: string;
+};
+
+const renderedCharts: { type?: string; x?: ChartScale }[] = [];
+
 vi.mock('react-chartjs-2', () => ({
-  Chart: ({ type }: { type?: string }) => (
-    <div data-testid={type === 'line' ? 'line-chart' : 'candle-chart'} />
-  ),
+  Chart: ({ type, options }: { type?: string; options?: { scales?: { x?: ChartScale } } }) => {
+    renderedCharts.push({ type, x: options?.scales?.x });
+    return <div data-testid={type === 'line' ? 'line-chart' : 'candle-chart'} />;
+  },
 }));
 
 const DAY = 86_400_000;
@@ -38,13 +49,15 @@ describe('Stocks', () => {
     vi.useRealTimers();
     clearMarketMemory();
     localStorage.clear();
+    renderedCharts.length = 0;
     vi.unstubAllGlobals();
   });
 
   it('shows a cached candlestick series and slices it when the range changes', async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
-    writeCache(equityCacheKey('AAPL'), snapshot(Date.now()));
+    const cached = snapshot(Date.now());
+    writeCache(equityCacheKey('AAPL'), cached);
 
     render(
       <MemoryRouter>
@@ -64,9 +77,25 @@ describe('Stocks', () => {
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Candles', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Line', pressed: false })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
-    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High');
+    const rangeStats = screen.getByRole('group', { name: 'Selected range' });
+    const chartStyle = screen.getByRole('group', { name: 'Chart style' });
+    expect(rangeStats.compareDocumentPosition(chartStyle) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(chartStyle).toHaveClass('border-2');
+    expect(rangeStats).not.toContainElement(chartStyle);
+    expect(rangeStats).toHaveTextContent('37.50%');
+    expect(rangeStats).toHaveTextContent('High');
     expect(screen.getByTestId('candle-chart')).toBeInTheDocument();
+    const shown = equityCandles(cached.candles, cached.intraday, '1Y');
+    const last = shown[shown.length - 1];
+    const beforeLast = shown[shown.length - 2];
+    expect(renderedCharts[renderedCharts.length - 1]?.x).toMatchObject({
+      min: shown[0].t - (shown[1].t - shown[0].t) / 2,
+      max: last.t + (last.t - beforeLast.t) / 2,
+      offset: false,
+      bounds: 'data',
+    });
     expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
       'Prev close',
     );
@@ -88,6 +117,12 @@ describe('Stocks', () => {
     expect(screen.getByRole('button', { name: 'Line', pressed: true })).toBeInTheDocument();
     expect(screen.getByTestId('line-chart')).toBeInTheDocument();
     expect(screen.queryByTestId('candle-chart')).not.toBeInTheDocument();
+    expect(renderedCharts[renderedCharts.length - 1]?.x).toMatchObject({
+      min: shown[0].t - (shown[1].t - shown[0].t) / 2,
+      max: last.t + (last.t - beforeLast.t) / 2,
+      offset: false,
+      bounds: 'data',
+    });
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
 
     await userEvent.click(screen.getByRole('button', { name: '1D' }));
