@@ -4,7 +4,6 @@ import Crypto from '../components/modules/Crypto';
 import Experiences from '../components/modules/Experiences';
 import Projects from '../components/modules/Projects';
 import Resume from '../components/modules/Resume';
-import Solitaire from '../components/modules/Solitaire';
 import Stocks from '../components/modules/Stocks';
 import WorldClock from '../components/modules/WorldClock';
 import type { AppId } from './apps';
@@ -18,5 +17,4 @@ export const appComponents: Record<AppId, ComponentType> = {
   crypto: Crypto,
   stocks: Stocks,
   clock: WorldClock,
-  solitaire: Solitaire,
 };
