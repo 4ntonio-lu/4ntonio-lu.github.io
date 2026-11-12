@@ -4,6 +4,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
 import { profile } from './content';
+import { CASCADE_ORIGIN_Y, CASCADE_STEP } from './desktop/windowManager';
 
 function Pathname() {
   const { pathname } = useLocation();
@@ -32,16 +33,27 @@ describe('App', () => {
   beforeEach(() => setWidth(1280));
   afterEach(() => setWidth(1280));
 
-  it('opens the About window on the first visit and puts it in the address bar', () => {
+  it('opens the About window on the first visit and keeps the address bar at the site root', () => {
     renderAt('/');
 
     expect(screen.getByRole('heading', { name: /I'm Antonio Lu/ })).toBeInTheDocument();
     expect(taskbar().getByRole('button', { name: 'About', pressed: true })).toBeInTheDocument();
-    expect(path()).toHaveTextContent(/^\/about$/);
+    expect(path()).toHaveTextContent(/^\/$/);
   });
 
+  it.each(['/about', '/resume', '/experiences', '/projects', '/crypto', '/stocks'])(
+    'returns %s to the site root without opening that app',
+    (entry) => {
+      renderAt(entry);
+
+      expect(path()).toHaveTextContent(/^\/$/);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    },
+  );
+
   it('shows a tab for each experience and switches between them', async () => {
-    renderAt('/experiences');
+    renderAt('/');
+    await userEvent.dblClick(desktop().getByRole('button', { name: 'Experiences' }));
 
     expect(screen.getByRole('tab', { name: 'Trimble', selected: true })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: 'Microchip' }));
@@ -50,30 +62,36 @@ describe('App', () => {
     expect(screen.getByText('Full Stack Software Engineer Intern')).toBeVisible();
   });
 
-  it('shows a tab for each project', () => {
-    renderAt('/projects');
+  it('shows a tab for each project', async () => {
+    renderAt('/');
+    await userEvent.dblClick(desktop().getByRole('button', { name: 'Projects' }));
 
     for (const name of ['Portfolio', 'Ticket Tracker', 'Mind Kingdom']) {
       expect(screen.getByRole('tab', { name })).toBeInTheDocument();
     }
   });
 
-  it('embeds the resume PDF in a wide window', async () => {
-    renderAt('/resume');
+  it('embeds the resume PDF in a window that fills down to the taskbar', async () => {
+    renderAt('/');
+    await userEvent.dblClick(desktop().getByRole('button', { name: 'Resume' }));
 
     expect(screen.getByTitle('Resume PDF')).toHaveAttribute(
       'src',
       expect.stringContaining('Resume.pdf'),
     );
     const dialog = screen.getByRole('dialog', { name: 'Resume' });
-    expect(dialog).toHaveStyle({ width: '84%', height: 'calc(100% - 16px)' });
+    expect(dialog).toHaveStyle({
+      width: '84%',
+      height: `calc(100% - ${CASCADE_ORIGIN_Y + CASCADE_STEP}px)`,
+    });
+    expect(path()).toHaveTextContent(/^\/$/);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Maximize' }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Maximize' }));
     expect(dialog).toHaveStyle({ width: '100%', height: '100%' });
   });
 
   it('closes the window from the title bar and leaves its taskbar button gone', async () => {
-    renderAt('/about');
+    renderAt('/');
 
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
 
@@ -92,7 +110,7 @@ describe('App', () => {
   });
 
   it('maximizes a window and restores it', async () => {
-    renderAt('/about');
+    renderAt('/');
     const dialog = screen.getByRole('dialog', { name: 'About' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Maximize' }));
@@ -106,7 +124,7 @@ describe('App', () => {
   });
 
   it('selects a desktop icon on click and opens it on double-click', async () => {
-    renderAt('/about');
+    renderAt('/');
     const projects = desktop().getByRole('button', { name: 'Projects' });
 
     await userEvent.click(projects);
@@ -141,7 +159,7 @@ describe('App', () => {
   });
 
   it('minimizes to the taskbar and restores from that button', async () => {
-    renderAt('/about');
+    renderAt('/');
 
     await userEvent.click(screen.getByRole('button', { name: 'Minimize' }));
 
@@ -158,7 +176,7 @@ describe('App', () => {
   });
 
   it('stacks a new window above the others and brings a clicked window to the front', async () => {
-    renderAt('/about');
+    renderAt('/');
     await userEvent.dblClick(desktop().getByRole('button', { name: 'Projects' }));
 
     const about = screen.getByRole('dialog', { name: 'About' });
@@ -166,19 +184,19 @@ describe('App', () => {
     expect(Number(projects.style.zIndex)).toBeGreaterThan(Number(about.style.zIndex));
     expect(about.querySelector('.win95-title')).toHaveClass('is-inactive');
     expect(projects.querySelector('.win95-title')).not.toHaveClass('is-inactive');
-    expect(path()).toHaveTextContent(/^\/projects$/);
+    expect(path()).toHaveTextContent(/^\/$/);
 
     await userEvent.click(about);
     expect(Number(about.style.zIndex)).toBeGreaterThan(Number(projects.style.zIndex));
     expect(about.querySelector('.win95-title')).not.toHaveClass('is-inactive');
     expect(projects.querySelector('.win95-title')).toHaveClass('is-inactive');
-    expect(path()).toHaveTextContent(/^\/about$/);
+    expect(path()).toHaveTextContent(/^\/$/);
     expect(taskbar().getByRole('button', { name: 'About', pressed: true })).toBeInTheDocument();
     expect(taskbar().getByRole('button', { name: 'Projects', pressed: false })).toBeInTheDocument();
   });
 
   it('opens and closes the Start menu, and launches an app from it', async () => {
-    renderAt('/about');
+    renderAt('/');
     const start = screen.getByRole('button', { name: 'Start', expanded: false });
 
     await userEvent.click(start);
@@ -202,7 +220,7 @@ describe('App', () => {
 
   it('fills the screen on a phone and still opens apps from Start', async () => {
     setWidth(390);
-    renderAt('/about');
+    renderAt('/');
 
     expect(screen.getByRole('dialog', { name: 'About' })).toHaveAttribute('data-fill', 'true');
 

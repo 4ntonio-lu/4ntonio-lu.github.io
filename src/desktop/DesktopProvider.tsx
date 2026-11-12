@@ -1,15 +1,6 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-  type JSX,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useMemo, useReducer, type JSX, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useWindowDimensions from '../components/hooks/useWindowDimensions';
-import { appById, appByPath } from './apps';
 import { DesktopContext, type DesktopContextValue } from './useDesktop';
 import {
   COMPACT_MAX_WIDTH,
@@ -18,56 +9,31 @@ import {
   type Action,
 } from './windowManager';
 
-function initialWindowId(pathname: string): string | null {
-  return appByPath(pathname)?.id ?? (pathname === '/' ? 'about' : null);
-}
-
-export function DesktopProvider({ children }: { children: ReactNode }): JSX.Element {
+export function DesktopProvider({
+  children,
+  initialOpen,
+}: {
+  children: ReactNode;
+  /** Tests mount one window directly. Leave this unset so the first visit to "/" opens About. */
+  initialOpen?: string | null;
+}): JSX.Element {
   const location = useLocation();
   const navigate = useNavigate();
-  const [state, dispatch] = useReducer(desktopReducer, location.pathname, (pathname: string) =>
-    createInitialState(initialWindowId(pathname)),
-  );
+  const openOnLoad =
+    initialOpen !== undefined ? initialOpen : location.pathname === '/' ? 'about' : null;
+  const [state, dispatch] = useReducer(desktopReducer, openOnLoad, createInitialState);
   const { windowWidth } = useWindowDimensions();
   const compact = windowWidth <= COMPACT_MAX_WIDTH;
 
-  // Browser Back and Forward should move focus. Clicks update the URL themselves,
-  // so this only reacts to a popstate and never pushes a second history entry.
-  const fromHistory = useRef(false);
+  // An old per-app address still loads the site, then the bar returns to the root.
+  // It does not open that app.
   useEffect(() => {
-    const markHistory = () => {
-      fromHistory.current = true;
-    };
-    window.addEventListener('popstate', markHistory);
-    return () => window.removeEventListener('popstate', markHistory);
+    if (location.pathname !== '/') navigate('/', { replace: true });
+  }, [location.pathname, navigate]);
+
+  const run = useCallback((action: Action) => {
+    dispatch(action);
   }, []);
-
-  useEffect(() => {
-    if (!fromHistory.current) return;
-    fromHistory.current = false;
-    const app = appByPath(location.pathname);
-    if (app) dispatch({ type: 'open', id: app.id });
-  }, [location.pathname, dispatch]);
-
-  // The first visit to "/" opens About, and the address bar should say so.
-  // Closing the last window returns to "/" and must leave the desktop empty.
-  const redirectInitialRoot = useRef(location.pathname === '/');
-  const focusedPath = appById(state.focusedId)?.path ?? null;
-  useEffect(() => {
-    if (!redirectInitialRoot.current || !focusedPath) return;
-    redirectInitialRoot.current = false;
-    navigate(focusedPath, { replace: true });
-  }, [focusedPath, navigate]);
-
-  const run = useCallback(
-    (action: Action) => {
-      const next = desktopReducer(state, action);
-      dispatch(action);
-      const path = appById(next.focusedId)?.path ?? '/';
-      if (path !== location.pathname) navigate(path);
-    },
-    [location.pathname, navigate, state],
-  );
 
   const value = useMemo<DesktopContextValue>(
     () => ({ ...state, compact, run, dispatch }),

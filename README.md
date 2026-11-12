@@ -23,7 +23,7 @@ projects, and check live crypto prices.
 - [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) (strict mode)
 - [Vite](https://vite.dev/) for dev server and builds
 - [Tailwind CSS](https://tailwindcss.com/) for styling
-- [React Router](https://reactrouter.com/) for app routes
+- [React Router](https://reactrouter.com/) so the address bar stays at the site root
 - [Chart.js](https://www.chartjs.org/) for price charts
 - [Zod](https://zod.dev/) to validate the content files at build time
 - [Vitest](https://vitest.dev/) + [Testing Library](https://testing-library.com/) for tests
@@ -66,7 +66,7 @@ Then open http://localhost:5173.
 src/
   App.tsx                 Desktop shell: icons, open windows, and the taskbar
   desktop/
-    apps.ts               App titles, paths, and icons, in Start-menu order
+    apps.ts               App titles and icons, in Start-menu order
     appComponents.tsx     The React component for each app id
     windowManager.ts      Open, focus, move, minimize, maximize, and close
   content/                Site text as JSON, plus the schema that validates it
@@ -86,7 +86,7 @@ cloudflare-worker/        CoinGecko proxy (separate npm package)
 1. Create a module in `src/components/modules/` that renders `<WindowBox name="..." />`. The
    `name` prop must match the app's `windowName`.
 2. Add an entry to [`src/desktop/apps.ts`](src/desktop/apps.ts) with its id, title, window name,
-   path, and icon. That list is the Start menu, the desktop icons, and the taskbar.
+   and icon. That list is the Start menu, the desktop icons, and the taskbar.
 3. Register the component in [`src/desktop/appComponents.tsx`](src/desktop/appComponents.tsx).
    TypeScript fails the build if an id from `apps.ts` has no component.
 
@@ -180,8 +180,8 @@ The site is hosted on GitHub Pages from the `gh-pages` branch.
 npm run deploy
 ```
 
-This builds the site, copies `index.html` to `404.html` so deep links like `/experiences` load the
-app, and pushes `dist/` to the `gh-pages` branch with the
+This builds the site, copies `index.html` to `404.html` so any address still loads the site, and
+pushes `dist/` to the `gh-pages` branch with the
 [`gh-pages`](https://github.com/tschaub/gh-pages) package. The copy step uses the Windows `copy`
 command, so run it from a Windows terminal.
 

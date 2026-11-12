@@ -40,8 +40,8 @@ describe('Stocks', () => {
     writeCache(equityCacheKey('AAPL'), snapshot(Date.now()));
 
     render(
-      <MemoryRouter initialEntries={['/stocks']}>
-        <DesktopProvider>
+      <MemoryRouter>
+        <DesktopProvider initialOpen="stocks">
           <Stocks />
         </DesktopProvider>
       </MemoryRouter>,

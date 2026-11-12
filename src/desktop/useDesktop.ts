@@ -3,9 +3,9 @@ import type { Action, DesktopState } from './windowManager';
 
 export type DesktopContextValue = DesktopState & {
   compact: boolean;
-  /** Apply an action and point the URL at the focused window. */
+  /** Apply an action. The address bar stays at the site root. */
   run: (action: Action) => void;
-  /** Apply an action without touching the URL. Used for drags and for browser history. */
+  /** Apply an action with no other side effects. Used for drags and icon selection. */
   dispatch: (action: Action) => void;
 };
 

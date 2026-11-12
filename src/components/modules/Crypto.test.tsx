@@ -49,8 +49,8 @@ describe('Crypto', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/crypto']}>
-        <DesktopProvider>
+      <MemoryRouter>
+        <DesktopProvider initialOpen="crypto">
           <Crypto />
         </DesktopProvider>
       </MemoryRouter>,
