@@ -63,7 +63,8 @@ describe('Crypto', () => {
       [...screen.getByRole('group', { name: 'Chart range' }).querySelectorAll('button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['1D', '1W', '1M', '3M', '1Y', '5Y']);
+    ).toEqual(['1D', '1W', '1M', '3M', '1Y']);
+    expect(screen.queryByRole('button', { name: '5Y' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('20.00%');
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $120.00');
@@ -105,50 +106,6 @@ describe('Crypto', () => {
     const chartUrl = String(fetchSpy.mock.calls[fetchSpy.mock.calls.length - 1]?.[0]);
     expect(chartUrl).toContain('days=1');
     expect(chartUrl).not.toContain('interval=');
-  });
-
-  it('does not draw a one-year series as five years', async () => {
-    const now = Date.now();
-    const urls: string[] = [];
-    vi.stubGlobal('fetch', (input: RequestInfo) => {
-      urls.push(String(input));
-      return Promise.resolve(
-        Response.json({
-          prices: [
-            [now - 364 * DAY, 100],
-            [now, 180],
-          ],
-        }),
-      );
-    });
-    writeCache(cryptoQuoteCacheKey('bitcoin'), {
-      id: 'bitcoin',
-      symbol: 'bitcoin',
-      name: 'Bitcoin',
-      price: 73000,
-      changePct24h: 1.5,
-      marketCap: 1,
-      asOf: now,
-    });
-    writeCache(cryptoHistoryCacheKey('bitcoin', '365'), [
-      { t: now - 10 * DAY, price: 100 },
-      { t: now, price: 120 },
-    ]);
-
-    render(
-      <MemoryRouter>
-        <DesktopProvider initialOpen="crypto">
-          <Crypto />
-        </DesktopProvider>
-      </MemoryRouter>,
-    );
-
-    await userEvent.click(screen.getByRole('button', { name: '5Y' }));
-
-    expect(await screen.findByText(/free chart only goes back one year/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('price-chart')).not.toBeInTheDocument();
-    expect(urls.some((url) => url.includes('days=1825'))).toBe(true);
-    expect(screen.queryByRole('group', { name: 'Selected range' })).not.toBeInTheDocument();
   });
 
   it('fetches and refreshes only the open coin', async () => {

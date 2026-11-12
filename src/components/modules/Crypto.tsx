@@ -39,7 +39,6 @@ import {
 import {
   LINE_RANGES,
   chartSeriesCacheable,
-  chartSeriesCovers,
   lineChartQueryDays,
   percentChange,
   rangeDays,
@@ -263,10 +262,6 @@ function CryptoPrices(): JSX.Element {
         const series = next[id];
         if (!series) throw new Error('No market data');
         if (!active) return;
-        if (numericDays >= 1000 && !chartSeriesCovers(series, numericDays)) {
-          setChartErrorKey(key);
-          return;
-        }
         if (chartSeriesCacheable(series, numericDays)) {
           writeCache(cryptoHistoryCacheKey(id, queryDays), series);
         }
@@ -376,11 +371,9 @@ function CryptoPrices(): JSX.Element {
                               </>
                             ) : (
                               <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                                {range === '5Y' && chartError
-                                  ? "Couldn't load 5Y. The free chart only goes back one year."
-                                  : chartError
-                                    ? "Couldn't load the chart. Prices above are still updating."
-                                    : 'Loading chart…'}
+                                {chartError
+                                  ? "Couldn't load the chart. Prices above are still updating."
+                                  : 'Loading chart…'}
                               </p>
                             )}
                           </div>

@@ -102,12 +102,6 @@ describe('coingecko client', () => {
     expect(urls.filter((url) => url.includes('type=info'))).toHaveLength(1);
     expect(urls[0]).toContain('https://cloudflare-worker.4ntonio-lu.workers.dev');
     expect(urls.find((url) => url.includes('type=chart'))).not.toContain('days=');
-
-    urls.length = 0;
-    await fetchCryptoHistory(['bitcoin'], '1825');
-    expect(urls).toEqual([
-      'https://cloudflare-worker.4ntonio-lu.workers.dev/?id=bitcoin&type=chart&days=1825',
-    ]);
   });
 
   it('keeps the coins that loaded when another id is rejected', async () => {

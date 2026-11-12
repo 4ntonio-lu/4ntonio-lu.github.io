@@ -4,7 +4,6 @@ import {
   seriesBounds,
   sliceByDays,
   chartSeriesCacheable,
-  chartSeriesCovers,
   equityCandles,
   equityRangeDays,
   latestSession,
@@ -28,20 +27,6 @@ describe('series', () => {
 
   it('falls back to the last two points when the window has a single close', () => {
     expect(sliceByDays(points, 1).map((point) => point.price)).toEqual([110, 80]);
-  });
-
-  it('refuses to call a one-year series five years', () => {
-    const year = [
-      { t: 0, price: 1 },
-      { t: 364 * DAY, price: 2 },
-    ];
-    const five = [
-      { t: 0, price: 1 },
-      { t: 5 * 365 * DAY, price: 2 },
-    ];
-    expect(chartSeriesCovers(year, 1825)).toBe(false);
-    expect(chartSeriesCovers(five, 1825)).toBe(true);
-    expect(chartSeriesCovers(year, 7)).toBe(true);
   });
 
   it('caches a short range only when the points are finer than a daily close', () => {

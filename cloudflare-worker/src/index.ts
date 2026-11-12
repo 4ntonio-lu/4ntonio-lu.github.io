@@ -25,9 +25,9 @@ const EQUITY_TTL_SECONDS = 15 * 60;
  * Chart windows the worker will ask CoinGecko for.
  * Omit `interval` for 1–90 days. The free plan then returns 5-minute bars for
  * one day and hourly bars through 90 days. `interval=daily` collapses those
- * windows to a handful of closes. 1825 is five years; the free plan rejects it.
+ * windows to a handful of closes.
  */
-const CHART_DAYS = new Set(['1', '7', '30', '90', '365', '1825']);
+const CHART_DAYS = new Set(['1', '7', '30', '90', '365']);
 
 export function cryptoChartParams(days: string | null): { days: string; interval?: 'daily' } | null {
 	if (days == null || days.length === 0) return { days: '365', interval: 'daily' };

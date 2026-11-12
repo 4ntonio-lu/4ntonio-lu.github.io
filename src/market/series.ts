@@ -8,7 +8,6 @@ export const LINE_RANGES = [
   { id: '1M', label: '1M', days: 30 },
   { id: '3M', label: '3M', days: 90 },
   { id: '1Y', label: '1Y', days: 365 },
-  { id: '5Y', label: '5Y', days: 1825 },
 ] as const;
 
 export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
@@ -35,17 +34,6 @@ export function lineChartQueryDays(id: LineRangeId): string {
   return String(rangeDays(id));
 }
 
-/**
- * A five-year label needs a series that is actually longer than one year.
- * The free CoinGecko plan stops at 365 days, and that payload must not be drawn as 5Y.
- */
-export function chartSeriesCovers(points: readonly { t: number }[], days: number): boolean {
-  if (points.length < 2) return false;
-  if (days < 1000) return true;
-  const span = points[points.length - 1].t - points[0].t;
-  return span >= 4 * 365 * DAY_MS;
-}
-
 function medianGap(points: readonly { t: number }[]): number | null {
   if (points.length < 2) return null;
   const gaps: number[] = [];
@@ -61,7 +49,6 @@ function medianGap(points: readonly { t: number }[]): number | null {
  * granularity: 5 minutes for a day, hourly through 90 days, daily after that.
  */
 export function chartSeriesCacheable(points: readonly { t: number }[], days: number): boolean {
-  if (!chartSeriesCovers(points, days)) return false;
   const gap = medianGap(points);
   if (gap == null) return false;
   if (days <= 1) return gap <= 20 * 60_000;
