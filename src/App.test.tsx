@@ -56,6 +56,7 @@ describe('App', () => {
     await userEvent.dblClick(desktop().getByRole('button', { name: 'Experiences' }));
 
     expect(screen.getByRole('tab', { name: 'Charles Schwab', selected: true })).toBeInTheDocument();
+    expect(screen.getByText('Austin, TX')).toBeVisible();
     expect(screen.getByRole('tab', { name: 'Trimble' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: 'Microchip' }));
 
