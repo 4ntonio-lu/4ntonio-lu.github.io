@@ -37,10 +37,12 @@ import {
   sliceByDays,
   type EquityRangeId,
 } from '../../market/series';
+import { equityStatRows } from '../../market/stats';
 import type { Candle } from '../../market/types';
 import RangeButtons from '../market/RangeButtons';
 import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
+import StatsPanel from '../market/StatsPanel';
 
 ChartJS.register(CandlestickController, CandlestickElement, LinearScale, Tooltip);
 
@@ -72,7 +74,7 @@ function candleChartData(candles: Candle[]): ChartData<'candlestick'> {
 function candleChartOptions(candles: Candle[], days: number): ChartOptions<'candlestick'> {
   return {
     responsive: true,
-    aspectRatio: 2.05,
+    aspectRatio: 2.15,
     animation: false,
     parsing: false,
     interaction: { mode: 'index', intersect: false },
@@ -149,6 +151,7 @@ function Stocks(): JSX.Element {
   const [snapshots, setSnapshots] = useState<Record<string, EquitySnapshot>>({});
   const [loadingSymbol, setLoadingSymbol] = useState<string | null>(null);
   const [failedSymbol, setFailedSymbol] = useState<string | null>(null);
+  const [showStats, setShowStats] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -238,32 +241,45 @@ function Stocks(): JSX.Element {
                           onChange={(id) => setRange(id as EquityRangeId)}
                         />
                         <RangeSummary change={rangeMove} high={high} low={low} />
+                        <button
+                          type="button"
+                          className="button-shadow px-2 py-0.5 text-sm sm:ml-auto"
+                          aria-pressed={showStats}
+                          onClick={() => setShowStats((open) => !open)}
+                        >
+                          {showStats ? 'Hide stats' : 'Show stats'}
+                        </button>
                       </div>
-                      {candles.length >= 1 && snapshot ? (
-                        <>
-                          <p className="sr-only">
-                            {equity.name} closed at ${formatUsd(snapshot.price)},{' '}
-                            {formatSignedPercent(rangeMove ?? 0)} over {range}. The candlesticks run
-                            from {formatTooltipDate(candles[0].t)} through{' '}
-                            {formatTooltipDate(candles[candles.length - 1].t)}.
-                            {snapshot.asOf ? ` Saved ${formatClock(snapshot.asOf)}.` : ''}
-                          </p>
-                          <div className="border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] bg-[#c3c3c3] p-1">
-                            <Chart
-                              type="candlestick"
-                              data={candleChartData(candles)}
-                              options={candleChartOptions(candles, days)}
-                              plugins={[crosshairPlugin]}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <p className="border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                          {failed
-                            ? `Couldn't load ${equity.name}. The quote service didn't answer.`
-                            : 'Loading chart…'}
-                        </p>
-                      )}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                        <div className="min-w-0 flex-1">
+                          {candles.length >= 1 && snapshot ? (
+                            <>
+                              <p className="sr-only">
+                                {equity.name} closed at ${formatUsd(snapshot.price)},{' '}
+                                {formatSignedPercent(rangeMove ?? 0)} over {range}. The candlesticks
+                                run from {formatTooltipDate(candles[0].t)} through{' '}
+                                {formatTooltipDate(candles[candles.length - 1].t)}.
+                                {snapshot.asOf ? ` Saved ${formatClock(snapshot.asOf)}.` : ''}
+                              </p>
+                              <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
+                                <Chart
+                                  type="candlestick"
+                                  data={candleChartData(candles)}
+                                  options={candleChartOptions(candles, days)}
+                                  plugins={[crosshairPlugin]}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
+                              {failed
+                                ? `Couldn't load ${equity.name}. The quote service didn't answer.`
+                                : 'Loading chart…'}
+                            </p>
+                          )}
+                        </div>
+                        {showStats && snapshot && <StatsPanel rows={equityStatRows(snapshot)} />}
+                      </div>
                       <RefreshStatus
                         refreshing={loading}
                         updatedAt={snapshot?.asOf ?? null}

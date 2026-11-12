@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { cryptoStatRows } from './stats';
+import type { EquitySnapshot } from './equities';
+import { cryptoStatRows, equityStatRows } from './stats';
 import type { Quote } from './types';
 
 const quote: Quote = {
@@ -44,5 +45,33 @@ describe('crypto stats', () => {
         (row) => row.label,
       ),
     ).not.toContain('24h high');
+  });
+});
+
+describe('equity stats', () => {
+  const day = 86_400_000;
+  const snapshot: EquitySnapshot = {
+    symbol: 'AAPL',
+    price: 110,
+    previousClose: 105,
+    asOf: 1,
+    candles: [
+      { t: 1, o: 70, h: 82, l: 68, c: 80, v: 1_000_000 },
+      { t: 1 + 400 * day, o: 109, h: 112, l: 108, c: 110, v: 3_012_000 },
+    ],
+  };
+
+  it('fills the panel from the quote and the daily candles', () => {
+    expect(equityStatRows(snapshot).map((row) => `${row.label} ${row.value}`)).toEqual([
+      'Day change +4.76%',
+      'Day $ +$5.00',
+      'Prev close $105.00',
+      'Open $109.00',
+      'Day high $112.00',
+      'Day low $108.00',
+      'Volume 3.0m',
+      '52w high $112.00',
+      '52w low $108.00',
+    ]);
   });
 });

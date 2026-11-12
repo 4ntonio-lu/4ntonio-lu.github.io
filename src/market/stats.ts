@@ -4,7 +4,10 @@ import {
   formatSignedPercent,
   formatSignedUsd,
   formatUsd,
+  formatVolume,
 } from './format';
+import { percentChange, sliceByDays } from './series';
+import type { EquitySnapshot } from './equities';
 import type { Quote } from './types';
 
 export type StatRow = {
@@ -62,5 +65,29 @@ export function cryptoStatRows(quote: Quote): StatRow[] {
   );
   add(rows, 'ATH', money(quote.ath));
   add(rows, 'ATL', money(quote.atl));
+  return rows;
+}
+
+/** Rows the stocks window can fill from the quote and the daily candles. */
+export function equityStatRows(snapshot: EquitySnapshot): StatRow[] {
+  const rows: StatRow[] = [];
+  const dayPct = percentChange(snapshot.previousClose, snapshot.price);
+  add(rows, 'Day change', dayPct == null ? undefined : formatSignedPercent(dayPct));
+  add(rows, 'Day $', formatSignedUsd(snapshot.price - snapshot.previousClose));
+  add(rows, 'Prev close', money(snapshot.previousClose));
+
+  const latest = snapshot.candles[snapshot.candles.length - 1];
+  if (latest) {
+    add(rows, 'Open', money(latest.o));
+    add(rows, 'Day high', money(latest.h));
+    add(rows, 'Day low', money(latest.l));
+    add(rows, 'Volume', latest.v > 0 ? formatVolume(latest.v) : undefined);
+  }
+
+  const year = sliceByDays(snapshot.candles, 365, 1);
+  if (year.length > 0) {
+    add(rows, '52w high', money(Math.max(...year.map((candle) => candle.h))));
+    add(rows, '52w low', money(Math.min(...year.map((candle) => candle.l))));
+  }
   return rows;
 }

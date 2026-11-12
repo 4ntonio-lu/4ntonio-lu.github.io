@@ -58,6 +58,16 @@ describe('Stocks', () => {
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High');
     expect(screen.getByTestId('candle-chart')).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
+      'Prev close',
+    );
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
+      '$105.00',
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Hide stats' }));
+    expect(screen.queryByRole('complementary', { name: 'Market stats' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Show stats' }));
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toBeInTheDocument();
     expect(screen.getByText('Powered by')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Yahoo Finance' })).toHaveAttribute(
       'href',
