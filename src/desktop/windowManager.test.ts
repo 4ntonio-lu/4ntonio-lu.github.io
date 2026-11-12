@@ -6,6 +6,7 @@ import {
   createInitialState,
   desktopReducer,
   initialDesktopState,
+  weatherWindowOrigin,
   type DesktopState,
 } from './windowManager';
 
@@ -101,6 +102,42 @@ describe('desktopReducer', () => {
     });
     expect(selected.selectedId).toBe('projects');
     expect(selected.focusedId).toBe('about');
+  });
+
+  it('places a new window at an explicit origin when one is given', () => {
+    const opened = desktopReducer(initialDesktopState, {
+      type: 'open',
+      id: 'weather',
+      x: 640,
+      y: 16,
+    });
+    expect(opened.windows[0]).toMatchObject({ x: 640, y: 16 });
+  });
+
+  it('keeps Weather off of About', () => {
+    const about = { top: 16, right: 640, bottom: 280 };
+    expect(weatherWindowOrigin({ desktopWidth: 1280, weatherWidth: 740, about })).toEqual({
+      x: CASCADE_ORIGIN_X,
+      y: 292,
+    });
+    expect(
+      weatherWindowOrigin({
+        desktopWidth: 1280,
+        weatherWidth: 1280 * 0.48,
+        about: { top: 16, right: 638, bottom: 441 },
+      }),
+    ).toEqual({ x: 650, y: 16 });
+    expect(
+      weatherWindowOrigin({
+        desktopWidth: 1600,
+        weatherWidth: 700,
+        about: { top: 16, right: 500, bottom: 280 },
+      }),
+    ).toEqual({ x: 512, y: 16 });
+    expect(weatherWindowOrigin({ desktopWidth: 1280, weatherWidth: 740, about: null })).toEqual({
+      x: CASCADE_ORIGIN_X,
+      y: CASCADE_ORIGIN_Y,
+    });
   });
 
   it('opens the requested app for a deep link and About for the site root', () => {

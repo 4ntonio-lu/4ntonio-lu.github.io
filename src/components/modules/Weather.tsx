@@ -1,5 +1,6 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useRef, useState, type JSX } from 'react';
 import WindowBox from '../elements/WindowBox';
+import { WEATHER_WINDOW_WIDTH } from '../../desktop/windowManager';
 import {
   CITIES,
   loadForecast,
@@ -8,29 +9,88 @@ import {
   type ForecastView,
   type WeatherKind,
 } from '../../weather/forecast';
-import { markPixels } from '../../weather/marks';
+import sunUrl from '../../weather/icons/sun.png';
+import partlyUrl from '../../weather/icons/partly.png';
+import cloudUrl from '../../weather/icons/cloud.png';
+import rainUrl from '../../weather/icons/rain.png';
+
+/** Marks cropped from the weather draft. Conditions the draft does not draw reuse the closest one. */
+const MARKS: Record<WeatherKind, string> = {
+  clear: sunUrl,
+  partly: partlyUrl,
+  cloudy: cloudUrl,
+  fog: cloudUrl,
+  rain: rainUrl,
+  snow: cloudUrl,
+  storm: rainUrl,
+};
 
 function WeatherMark({ kind, size }: { kind: WeatherKind; size: number }): JSX.Element {
+  return <img className="weather-mark" src={MARKS[kind]} alt="" height={size} draggable={false} />;
+}
+
+function CityControl({
+  cityId,
+  onChoose,
+}: {
+  cityId: CityId;
+  onChoose: (id: CityId) => void;
+}): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const label = CITIES.find((city) => city.id === cityId)?.label ?? '';
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
   return (
-    <svg
-      className="weather-mark"
-      width={size}
-      height={size}
-      viewBox="0 0 16 16"
-      aria-hidden="true"
-      shapeRendering="crispEdges"
-    >
-      {markPixels(kind).map((pixel) => (
-        <rect
-          key={`${pixel.x}-${pixel.y}`}
-          x={pixel.x}
-          y={pixel.y}
-          width={1}
-          height={1}
-          fill={pixel.fill}
-        />
-      ))}
-    </svg>
+    <div className="weather-combo" ref={rootRef}>
+      <button
+        type="button"
+        className="weather-combo-face"
+        aria-label="City"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <span className="weather-combo-label">{label}</span>
+        <span className="weather-combo-button" aria-hidden="true">
+          <span className="weather-combo-caret" />
+        </span>
+      </button>
+      {open && (
+        <ul className="weather-combo-menu" role="listbox" aria-label="City">
+          {CITIES.map((city) => (
+            <li key={city.id} role="none">
+              <button
+                type="button"
+                role="option"
+                aria-selected={city.id === cityId}
+                onClick={() => {
+                  onChoose(city.id);
+                  setOpen(false);
+                }}
+              >
+                {city.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -72,28 +132,14 @@ function Weather(): JSX.Element {
   return (
     <WindowBox
       name="Weather"
-      width={0.46}
+      width={WEATHER_WINDOW_WIDTH}
       content={
         <div className="weather">
           <div className="weather-top">
-            <select
-              className="weather-select"
-              aria-label="City"
-              value={cityId}
-              onChange={(event) => {
-                const next = CITIES.find((city) => city.id === event.target.value);
-                if (next) choose(next.id);
-              }}
-            >
-              {CITIES.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.label}
-                </option>
-              ))}
-            </select>
+            <CityControl cityId={cityId} onChoose={choose} />
             {view && (
               <div className="weather-now">
-                <WeatherMark kind={view.kind} size={32} />
+                <WeatherMark kind={view.kind} size={40} />
                 <span className="weather-temp">{view.tempF} F</span>
                 <span className="weather-condition">{view.condition}</span>
               </div>
@@ -115,7 +161,7 @@ function Weather(): JSX.Element {
                     {view.hours.map((hour) => (
                       <li key={hour.label} className="weather-hour">
                         <span>{hour.label}</span>
-                        <WeatherMark kind={hour.kind} size={24} />
+                        <WeatherMark kind={hour.kind} size={32} />
                         <span>{hour.tempF}</span>
                       </li>
                     ))}
@@ -134,7 +180,7 @@ function Weather(): JSX.Element {
                           {day.highF}/{day.lowF}
                         </span>
                         <span className="weather-day-mark">
-                          <WeatherMark kind={day.kind} size={18} />
+                          <WeatherMark kind={day.kind} size={22} />
                         </span>
                       </li>
                     ))}
@@ -148,11 +194,11 @@ function Weather(): JSX.Element {
             </p>
           )}
 
-          <div className="weather-status">
+          <p className="weather-credit">
             <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">
               Powered by Open-Meteo
             </a>
-          </div>
+          </p>
         </div>
       }
     />

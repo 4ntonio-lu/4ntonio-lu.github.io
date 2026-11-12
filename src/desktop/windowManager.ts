@@ -17,7 +17,7 @@ export type DesktopState = {
 };
 
 export type Action =
-  | { type: 'open'; id: string }
+  | { type: 'open'; id: string; x?: number; y?: number }
   | { type: 'close'; id: string }
   | { type: 'minimize'; id: string }
   | { type: 'toggleMaximize'; id: string }
@@ -33,6 +33,28 @@ export const COMPACT_MAX_WIDTH = 767;
 export const CASCADE_ORIGIN_X = 216;
 export const CASCADE_ORIGIN_Y = 16;
 export const CASCADE_STEP = 26;
+
+/** Wide enough for Today and Week to sit side by side, as in the weather draft. */
+export const WEATHER_WINDOW_WIDTH = 0.48;
+
+/**
+ * Weather opens beside About when the desktop is wide enough, and below it
+ * otherwise, so the two windows do not stack.
+ */
+export function weatherWindowOrigin(input: {
+  desktopWidth: number;
+  weatherWidth: number;
+  about: { top: number; right: number; bottom: number } | null;
+}): { x: number; y: number } {
+  if (!input.about) return { x: CASCADE_ORIGIN_X, y: CASCADE_ORIGIN_Y };
+  const gap = 12;
+  const beside = input.about.right + gap;
+  if (beside + input.weatherWidth <= input.desktopWidth - 8) {
+    return { x: beside, y: Math.max(8, input.about.top) };
+  }
+  return { x: CASCADE_ORIGIN_X, y: input.about.bottom + gap };
+}
+
 const CASCADE_SLOTS = 8;
 
 export const initialDesktopState: DesktopState = {
@@ -100,8 +122,8 @@ export function desktopReducer(state: DesktopState, action: Action): DesktopStat
         minimized: false,
         maximized: false,
         z: topZ,
-        x: CASCADE_ORIGIN_X + slot * CASCADE_STEP,
-        y: CASCADE_ORIGIN_Y + slot * CASCADE_STEP,
+        x: action.x ?? CASCADE_ORIGIN_X + slot * CASCADE_STEP,
+        y: action.y ?? CASCADE_ORIGIN_Y + slot * CASCADE_STEP,
       };
       return {
         ...state,

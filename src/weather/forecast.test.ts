@@ -8,7 +8,6 @@ import {
   readForecast,
   type City,
 } from './forecast';
-import { markPixels } from './marks';
 
 function city(id: City['id']): City {
   const found = CITIES.find((item) => item.id === id);
@@ -169,14 +168,5 @@ describe('loadForecast', () => {
     vi.stubGlobal('fetch', () => Promise.resolve(new Response('no', { status: 502 })));
     await expect(loadForecast('austin')).rejects.toThrow(/unavailable/);
     expect(readForecast('austin')).toBeNull();
-  });
-});
-
-describe('weather marks', () => {
-  it('draws a pixel mark for every condition', () => {
-    const kinds = ['clear', 'partly', 'cloudy', 'fog', 'rain', 'snow', 'storm'] as const;
-    for (const kind of kinds) {
-      expect(markPixels(kind).length).toBeGreaterThan(10);
-    }
   });
 });
