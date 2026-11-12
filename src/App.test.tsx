@@ -57,14 +57,18 @@ describe('App', () => {
     }
   });
 
-  it('embeds the resume PDF in a wide window', () => {
+  it('embeds the resume PDF in a wide window', async () => {
     renderAt('/resume');
 
     expect(screen.getByTitle('Resume PDF')).toHaveAttribute(
       'src',
       expect.stringContaining('Resume.pdf'),
     );
-    expect(screen.getByRole('dialog', { name: 'Resume' })).toHaveStyle({ width: '84%' });
+    const dialog = screen.getByRole('dialog', { name: 'Resume' });
+    expect(dialog).toHaveStyle({ width: '84%', height: 'calc(100% - 16px)' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Maximize' }));
+    expect(dialog).toHaveStyle({ width: '100%', height: '100%' });
   });
 
   it('closes the window from the title bar and leaves its taskbar button gone', async () => {

@@ -276,18 +276,22 @@ label {
   overflow: auto;
 }
 
-/* A letter page needs most of the desktop. The height leaves room for the title bar,
-   the window bevel, the cascade offset, and the taskbar. */
+/* The resume window is sized to the desktop. The page fills that frame, including
+   when the window is maximized, so the grey face doesn't show under the PDF. */
+.win95-body:has(.resume-page) {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
 .resume-page {
   display: block;
   width: 100%;
-  height: calc(100dvh - var(--taskbar-h) - 5.5rem);
+  min-height: 0;
+  flex: 1 1 auto;
   border: 0;
   background: #fff;
-}
-
-.window-fill .resume-page {
-  height: 100%;
 }
 
 /* Taskbar */

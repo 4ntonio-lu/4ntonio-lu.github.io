@@ -7,6 +7,7 @@ function Resume(): JSX.Element {
     <WindowBox
       name="Resume"
       width={0.84}
+      fillHeight
       content={
         <iframe
           src={`${resumeUrl}#navpanes=0&view=FitH`}

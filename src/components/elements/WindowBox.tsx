@@ -8,9 +8,16 @@ type WindowBoxProps = {
   name: string;
   content: ReactNode;
   width: number;
+  /** Stretch the window down to the taskbar so the page inside can fill the frame. */
+  fillHeight?: boolean;
 };
 
-function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element | null {
+function WindowBox({
+  name,
+  content,
+  width,
+  fillHeight = false,
+}: WindowBoxProps): JSX.Element | null {
   const { windows, focusedId, compact, run, dispatch } = useDesktop();
   const nodeRef = useRef<HTMLDivElement>(null);
   const app = appByWindowName(name);
@@ -54,8 +61,8 @@ function WindowBox({ name, content, width }: WindowBoxProps): JSX.Element | null
         style={{
           zIndex: windowState.z,
           width: fill ? '100%' : `${width * 100}%`,
-          height: fill ? '100%' : undefined,
-          maxHeight: fill ? undefined : `calc(100% - ${windowState.y}px)`,
+          height: fill ? '100%' : fillHeight ? `calc(100% - ${windowState.y}px)` : undefined,
+          maxHeight: fill || fillHeight ? undefined : `calc(100% - ${windowState.y}px)`,
         }}
       >
         <WindowHeader
