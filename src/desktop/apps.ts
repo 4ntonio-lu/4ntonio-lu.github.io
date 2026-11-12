@@ -52,6 +52,12 @@ export const apps = [
     windowName: 'World Clock',
     icon: img.clock,
   },
+  {
+    id: 'solitaire',
+    title: 'Solitaire',
+    windowName: 'Solitaire',
+    icon: img.solitaire,
+  },
 ] as const;
 
 export type DesktopApp = (typeof apps)[number];

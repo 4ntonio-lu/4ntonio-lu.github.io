@@ -74,6 +74,15 @@ describe('App', () => {
     expect(path()).toHaveTextContent(/^\/$/);
   });
 
+  it('opens solitaire on the root address', async () => {
+    renderAt('/');
+    await userEvent.dblClick(desktop().getByRole('button', { name: 'Solitaire' }));
+
+    expect(screen.getByRole('dialog', { name: 'Solitaire' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Deal' })).toBeInTheDocument();
+    expect(path()).toHaveTextContent(/^\/$/);
+  });
+
   it('shows a tab for each project', async () => {
     renderAt('/');
     await userEvent.dblClick(desktop().getByRole('button', { name: 'Projects' }));
