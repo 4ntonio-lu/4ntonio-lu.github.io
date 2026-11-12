@@ -1,17 +1,5 @@
 /** Keep this list identical to EQUITIES in src/market/equities.ts. */
-export const EQUITY_SYMBOLS = [
-	'AAPL',
-	'MSFT',
-	'GOOGL',
-	'AMZN',
-	'NVDA',
-	'META',
-	'TSLA',
-	'SPY',
-	'QQQ',
-	'DIA',
-	'IWM',
-] as const;
+export const EQUITY_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'SPY', 'QQQ', 'DIA', 'IWM'] as const;
 
 export type EquityCandle = {
 	t: number;
@@ -22,11 +10,15 @@ export type EquityCandle = {
 	v: number;
 };
 
-export type EquityPayload = {
+export type EquitySeries = {
 	symbol: string;
 	price: number;
 	previousClose: number;
 	candles: EquityCandle[];
+};
+
+export type EquityPayload = EquitySeries & {
+	intraday: EquityCandle[];
 };
 
 const YAHOO_CHART = 'https://query1.finance.yahoo.com/v8/finance/chart';
@@ -35,7 +27,7 @@ function round4(value: number): number {
 	return Math.round(value * 10000) / 10000;
 }
 
-export function parseYahooChart(symbol: string, data: unknown): EquityPayload | null {
+export function parseYahooChart(symbol: string, data: unknown): EquitySeries | null {
 	if (!data || typeof data !== 'object') return null;
 	const result = (data as { chart?: { result?: unknown[] } }).chart?.result?.[0];
 	if (!result || typeof result !== 'object') return null;
@@ -97,16 +89,32 @@ export function parseYahooChart(symbol: string, data: unknown): EquityPayload | 
 	};
 }
 
-export async function fetchYahooChart(symbol: string): Promise<EquityPayload | null> {
-	const url = new URL(`${YAHOO_CHART}/${symbol}`);
-	url.searchParams.set('interval', '1d');
-	url.searchParams.set('range', '5y');
-	const response = await fetch(url, {
-		headers: {
-			Accept: 'application/json',
-			'User-Agent': 'Mozilla/5.0',
-		},
-	});
+export function yahooChartUrl(symbol: string, interval: string, range: string): string {
+	const url = new URL(`${YAHOO_CHART}/${encodeURIComponent(symbol)}`);
+	url.searchParams.set('interval', interval);
+	url.searchParams.set('range', range);
+	return url.toString();
+}
+
+async function fetchYahooSeries(symbol: string, interval: string, range: string): Promise<EquitySeries | null> {
+	let response: Response;
+	try {
+		response = await fetch(yahooChartUrl(symbol, interval, range), {
+			headers: {
+				Accept: 'application/json',
+				'User-Agent': 'Mozilla/5.0',
+			},
+		});
+	} catch {
+		return null;
+	}
 	if (!response.ok) return null;
 	return parseYahooChart(symbol, await response.json());
+}
+
+/** Daily history plus fifteen-minute bars, so a one-day chart is one session of candles. */
+export async function fetchYahooChart(symbol: string): Promise<EquityPayload | null> {
+	const [daily, intraday] = await Promise.all([fetchYahooSeries(symbol, '1d', '5y'), fetchYahooSeries(symbol, '15m', '5d')]);
+	if (!daily) return null;
+	return { ...daily, intraday: intraday?.candles ?? [] };
 }

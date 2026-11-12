@@ -1,3 +1,5 @@
+import type { Candle } from './types';
+
 const DAY_MS = 86_400_000;
 
 export const LINE_RANGES = [
@@ -10,7 +12,7 @@ export const LINE_RANGES = [
 
 export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
 
-/** Daily candles, sliced on the client from one five-year download. */
+/** Stock ranges. Short ranges use a finer series; long ranges roll daily bars up. */
 export const EQUITY_RANGES = [
   { id: '1D', label: '1D', days: 1 },
   { id: '1M', label: '1M', days: 30 },
@@ -43,6 +45,71 @@ export function sliceByDays<T extends { t: number }>(
   const sliced = points.filter((point) => point.t >= cutoff);
   if (sliced.length >= minPoints) return sliced;
   return points.slice(-minPoints);
+}
+
+const SESSION_ZONE = 'America/New_York';
+
+/** Trading-day key. Yahoo's intraday bars share one of these per session. */
+export function sessionDay(timestamp: number): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SESSION_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(timestamp);
+}
+
+/** The newest session in an intraday series, so 1D is one full day of bars. */
+export function latestSession<T extends { t: number }>(candles: readonly T[]): T[] {
+  if (candles.length === 0) return [];
+  const day = sessionDay(candles[candles.length - 1].t);
+  const session = candles.filter((candle) => sessionDay(candle.t) === day);
+  return session.length > 0 ? session : candles.slice(-1);
+}
+
+function bucketStart(timestamp: number, unit: 'week' | 'month'): number {
+  const date = new Date(timestamp);
+  if (unit === 'month') return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+  const mondayOffset = (date.getUTCDay() + 6) % 7;
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - mondayOffset);
+}
+
+/** Fold daily bars into weeks or months so a long range stays a candlestick chart. */
+export function aggregateCandles(candles: readonly Candle[], unit: 'week' | 'month'): Candle[] {
+  const groups = new Map<number, Candle>();
+  for (const candle of candles) {
+    const key = bucketStart(candle.t, unit);
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, { ...candle, t: key });
+      continue;
+    }
+    existing.h = Math.max(existing.h, candle.h);
+    existing.l = Math.min(existing.l, candle.l);
+    existing.c = candle.c;
+    existing.v += candle.v;
+  }
+  return [...groups.values()].sort((a, b) => a.t - b.t);
+}
+
+/**
+ * Candles for the selected stock range. 1D prefers the latest intraday session.
+ * 1Y and 5Y are rolled up so each candle is wide enough to read.
+ */
+export function equityCandles(
+  daily: readonly Candle[],
+  intraday: readonly Candle[] | undefined,
+  range: EquityRangeId,
+): Candle[] {
+  if (range === '1D') {
+    const session = latestSession(intraday ?? []);
+    if (session.length >= 2) return session;
+  }
+  const days = equityRangeDays(range);
+  const sliced = sliceByDays(daily, days, range === '1D' ? 1 : 2);
+  if (range === '1Y') return aggregateCandles(sliced, 'week');
+  if (range === '5Y') return aggregateCandles(sliced, 'month');
+  return sliced;
 }
 
 export function percentChange(from: number, to: number): number | null {

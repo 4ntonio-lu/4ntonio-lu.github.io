@@ -60,7 +60,7 @@ describe('equities', () => {
     const snapshot = await fetchEquity('AAPL');
     expect(snapshot.price).toBe(10);
     expect(urls).toEqual([
-      'https://cloudflare-worker.4ntonio-lu.workers.dev/?type=equity&symbol=AAPL',
+      'https://cloudflare-worker.4ntonio-lu.workers.dev/?type=equity&symbol=AAPL&series=2',
     ]);
   });
 });

@@ -32,9 +32,9 @@ import {
 } from '../../market/format';
 import {
   EQUITY_RANGES,
+  equityCandles,
   equityRangeDays,
   percentChange,
-  sliceByDays,
   type EquityRangeId,
 } from '../../market/series';
 import { equityStatRows } from '../../market/stats';
@@ -66,6 +66,9 @@ function candleChartData(candles: Candle[]): ChartData<'candlestick'> {
         borderColors: candleColors,
         backgroundColors: candleColors,
         borderWidth: 1,
+        barPercentage: 1,
+        categoryPercentage: 1,
+        barThickness: 'flex',
       },
     ],
   };
@@ -87,7 +90,8 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
         callbacks: {
           title(items) {
             const candle = candles[items[0]?.dataIndex ?? -1];
-            return candle ? formatTooltipDate(candle.t) : '';
+            if (!candle) return '';
+            return formatTooltipDate(candle.t, undefined, days <= 1);
           },
           label(item) {
             const candle = candles[item.dataIndex];
@@ -116,7 +120,11 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
           maxTicksLimit: 6,
           color: '#272727',
           font: { family: win95Font, size: 12 },
-          callback: (value) => (typeof value === 'number' ? formatAxisDate(value, days) : ''),
+          callback: (value) => {
+            if (typeof value !== 'number') return '';
+            const detail = days <= 1 ? 'time' : days <= 120 ? 'day' : 'auto';
+            return formatAxisDate(value, days, undefined, detail);
+          },
         },
       },
       y: {
@@ -191,7 +199,7 @@ function Stocks(): JSX.Element {
   const equity = EQUITIES.find((item) => item.symbol === symbol) ?? EQUITIES[0];
   const snapshot = snapshots[symbol];
   const days = equityRangeDays(range);
-  const candles = snapshot ? sliceByDays(snapshot.candles, days, 1) : [];
+  const candles = snapshot ? equityCandles(snapshot.candles, snapshot.intraday, range) : [];
   const loading = loadingSymbol === symbol;
   const failed = failedSymbol === symbol && !snapshot;
   const dayMove = snapshot ? percentChange(snapshot.previousClose, snapshot.price) : null;

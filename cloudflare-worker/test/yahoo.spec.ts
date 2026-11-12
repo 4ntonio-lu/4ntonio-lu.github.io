@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { parseYahooChart } from '../src/yahoo';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { fetchYahooChart, parseYahooChart, yahooChartUrl } from '../src/yahoo';
 
 describe('parseYahooChart', () => {
 	it('turns a split-adjusted Yahoo chart into candles and a day change', () => {
@@ -54,5 +54,43 @@ describe('parseYahooChart', () => {
 	it('rejects a chart that is not a series', () => {
 		expect(parseYahooChart('AAPL', { chart: { result: [] } })).toBeNull();
 		expect(parseYahooChart('AAPL', null)).toBeNull();
+	});
+});
+
+describe('fetchYahooChart', () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it('loads daily history and fifteen-minute bars for the one-day chart', async () => {
+		const urls: string[] = [];
+		vi.stubGlobal('fetch', (input: RequestInfo) => {
+			urls.push(String(input));
+			const intraday = String(input).includes('interval=15m');
+			const body = {
+				chart: {
+					result: [
+						{
+							meta: { regularMarketPrice: intraday ? 11 : 110 },
+							timestamp: [1, 2],
+							indicators: {
+								quote: [{ open: [1, 2], high: [2, 3], low: [1, 2], close: [1.5, intraday ? 11 : 110], volume: [1, 2] }],
+							},
+						},
+					],
+				},
+			};
+			return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+		});
+
+		const payload = await fetchYahooChart('AAPL');
+		expect(yahooChartUrl('AAPL', '1d', '5y')).toBe('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=5y');
+		expect(urls).toEqual([
+			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=5y',
+			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=15m&range=5d',
+		]);
+		expect(payload?.price).toBe(110);
+		expect(payload?.previousClose).toBe(1.5);
+		expect(payload?.intraday.map((candle) => candle.c)).toEqual([1.5, 11]);
 	});
 });

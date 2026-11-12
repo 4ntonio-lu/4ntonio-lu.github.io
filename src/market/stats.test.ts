@@ -55,6 +55,7 @@ describe('equity stats', () => {
     price: 110,
     previousClose: 105,
     asOf: 1,
+    intraday: [],
     candles: [
       { t: 1, o: 70, h: 82, l: 68, c: 80, v: 1_000_000 },
       { t: 1 + 400 * day, o: 109, h: 112, l: 108, c: 110, v: 3_012_000 },

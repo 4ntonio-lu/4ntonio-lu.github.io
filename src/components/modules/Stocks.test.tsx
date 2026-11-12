@@ -19,6 +19,10 @@ function snapshot(now: number): EquitySnapshot {
     price: 110,
     previousClose: 105,
     asOf: now,
+    intraday: [
+      { t: Date.UTC(2026, 10, 11, 14, 35), o: 100, h: 101, l: 99, c: 100, v: 10 },
+      { t: Date.UTC(2026, 10, 11, 20, 0), o: 100, h: 130, l: 100, c: 120, v: 10 },
+    ],
     candles: [
       { t: now - 200 * DAY, o: 79, h: 82, l: 78, c: 80, v: 1_000_000 },
       { t: now - 10 * DAY, o: 99, h: 102, l: 98, c: 100, v: 2_000_000 },
@@ -74,6 +78,11 @@ describe('Stocks', () => {
       'https://finance.yahoo.com/quote/AAPL',
     );
     expect(fetchSpy).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('button', { name: '1D' }));
+    expect(screen.getByRole('button', { name: '1D', pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('20.00%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $130.00');
 
     await userEvent.click(screen.getByRole('button', { name: '1M' }));
 

@@ -27,6 +27,8 @@ describe('market format', () => {
   it('formats chart dates in a fixed locale', () => {
     expect(formatAxisDate(noon, 7, 'en-US')).toBe('Nov 10');
     expect(formatAxisDate(noon, 365, 'en-US')).toBe('Nov 26');
+    expect(formatAxisDate(noon, 1, 'en-US', 'time')).toBe('12:00 PM');
     expect(formatTooltipDate(noon, 'en-US')).toBe('Tue, Nov 10, 2026');
+    expect(formatTooltipDate(noon, 'en-US', true)).toBe('Tue, Nov 10, 12:00 PM');
   });
 });

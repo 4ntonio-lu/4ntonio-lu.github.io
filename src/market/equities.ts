@@ -23,35 +23,22 @@ export type EquitySnapshot = {
   price: number;
   previousClose: number;
   candles: Candle[];
+  /** Fifteen-minute bars for the last few sessions. Empty until the worker sends them. */
+  intraday: Candle[];
   asOf: number;
 };
 
-/** One symbol's five-year daily candles. Fresh enough for a portfolio, not a terminal. */
+/** One symbol. Fresh enough for a portfolio, not a terminal. */
 export const EQUITY_TTL_MS = 15 * 60 * 1000;
 
 export function equityCacheKey(symbol: string): string {
-  return `market:equity:v1:${symbol}`;
+  return `market:equity:v2:${symbol}`;
 }
 
-export function parseEquityPayload(data: unknown, asOf = Date.now()): EquitySnapshot {
-  if (!data || typeof data !== 'object') throw new Error('Bad equity payload');
-  const record = data as {
-    symbol?: unknown;
-    price?: unknown;
-    previousClose?: unknown;
-    candles?: unknown;
-  };
-  if (
-    typeof record.symbol !== 'string' ||
-    typeof record.price !== 'number' ||
-    typeof record.previousClose !== 'number' ||
-    !Array.isArray(record.candles)
-  ) {
-    throw new Error('Bad equity payload');
-  }
-
+function parseCandles(rows: unknown): Candle[] {
+  if (!Array.isArray(rows)) return [];
   const candles: Candle[] = [];
-  for (const row of record.candles) {
+  for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
     const candle = row as Partial<Candle>;
     if (
@@ -72,17 +59,41 @@ export function parseEquityPayload(data: unknown, asOf = Date.now()): EquitySnap
       v: typeof candle.v === 'number' ? candle.v : 0,
     });
   }
+  return candles;
+}
+
+export function parseEquityPayload(data: unknown, asOf = Date.now()): EquitySnapshot {
+  if (!data || typeof data !== 'object') throw new Error('Bad equity payload');
+  const record = data as {
+    symbol?: unknown;
+    price?: unknown;
+    previousClose?: unknown;
+    candles?: unknown;
+    intraday?: unknown;
+  };
+  if (
+    typeof record.symbol !== 'string' ||
+    typeof record.price !== 'number' ||
+    typeof record.previousClose !== 'number' ||
+    !Array.isArray(record.candles)
+  ) {
+    throw new Error('Bad equity payload');
+  }
+
+  const candles = parseCandles(record.candles);
   if (candles.length < 2) throw new Error('Equity chart was empty');
   return {
     symbol: record.symbol,
     price: record.price,
     previousClose: record.previousClose,
     candles,
+    intraday: parseCandles(record.intraday),
     asOf,
   };
 }
 
 export async function fetchEquity(symbol: string): Promise<EquitySnapshot> {
-  const data = await fetchWorkerJson({ type: 'equity', symbol });
+  // `series` misses an edge cache that was stored before intraday bars existed.
+  const data = await fetchWorkerJson({ type: 'equity', symbol, series: '2' });
   return parseEquityPayload(data);
 }

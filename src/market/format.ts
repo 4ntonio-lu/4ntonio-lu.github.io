@@ -35,16 +35,34 @@ export function formatAxisDate(
   timestamp: number,
   rangeDays: number,
   locales?: Intl.LocalesArgument,
+  detail: 'auto' | 'day' | 'time' = 'auto',
 ): string {
   const date = new Date(timestamp);
-  if (rangeDays <= 31) {
+  if (detail === 'time') {
+    return date.toLocaleTimeString(locales, { hour: 'numeric', minute: '2-digit' });
+  }
+  if (detail === 'day' || rangeDays <= 31) {
     return date.toLocaleDateString(locales, { month: 'short', day: 'numeric' });
   }
   return date.toLocaleDateString(locales, { month: 'short', year: '2-digit' });
 }
 
-export function formatTooltipDate(timestamp: number, locales?: Intl.LocalesArgument): string {
-  return new Date(timestamp).toLocaleDateString(locales, {
+export function formatTooltipDate(
+  timestamp: number,
+  locales?: Intl.LocalesArgument,
+  withTime = false,
+): string {
+  const date = new Date(timestamp);
+  if (withTime) {
+    return date.toLocaleString(locales, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+  return date.toLocaleDateString(locales, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
