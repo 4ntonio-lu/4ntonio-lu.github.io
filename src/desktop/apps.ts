@@ -1,4 +1,5 @@
 import { img } from '../assets/images/img';
+import { contentImage, profile } from '../content';
 
 /**
  * Desktop apps, in Start-menu order.
@@ -67,3 +68,18 @@ export function appByPath(path: string): DesktopApp | undefined {
 export function appByWindowName(name: string): DesktopApp | undefined {
   return apps.find((app) => app.windowName === name);
 }
+
+/** Shortcuts that open an address instead of a window. They come from profile.json. */
+export type DesktopLink = {
+  id: string;
+  title: string;
+  icon: string;
+  url: string;
+};
+
+export const desktopLinks: readonly DesktopLink[] = profile.links.map((link) => ({
+  id: link.label.toLowerCase().replace(/\s+/g, '-'),
+  title: link.label,
+  icon: contentImage(link.icon),
+  url: link.url,
+}));

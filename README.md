@@ -95,11 +95,11 @@ cloudflare-worker/        CoinGecko proxy (separate npm package)
 Everything the site says lives in JSON files in [`src/content/`](src/content), so updating the
 portfolio doesn't mean editing React components.
 
-| File               | What's in it                                                    |
-| ------------------ | --------------------------------------------------------------- |
-| `experiences.json` | Jobs in the Experiences window                                  |
-| `projects.json`    | Projects in the Projects window                                 |
-| `profile.json`     | The About window text, the taskbar links, and the resume's name |
+| File               | What's in it                                                        |
+| ------------------ | ------------------------------------------------------------------- |
+| `experiences.json` | Jobs in the Experiences window                                      |
+| `projects.json`    | Projects in the Projects window                                     |
+| `profile.json`     | The About window text, the desktop shortcuts, and the resume's name |
 
 Each file starts with a `$schema` line, so VS Code autocompletes field names, shows what each field
 is for on hover, and underlines mistakes as you type. The dev server and the build also check every

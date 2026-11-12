@@ -147,6 +147,7 @@ label {
   text-align: center;
   font-size: 1rem;
   line-height: 1.15;
+  text-decoration: none;
 }
 
 .desktop-icon img {
@@ -328,29 +329,6 @@ label {
   object-fit: contain;
 }
 
-.quick-launch {
-  display: flex;
-  height: calc(var(--taskbar-h) - 8px);
-  flex-shrink: 0;
-  align-items: center;
-  gap: 1px;
-  border: 1px solid;
-  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
-  padding: 0 3px;
-}
-
-.quick-launch a {
-  display: flex;
-  padding: 1px;
-  text-decoration: none;
-}
-
-.quick-launch img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
 .taskbar-windows {
   display: flex;
   height: calc(var(--taskbar-h) - 6px);
@@ -459,13 +437,6 @@ label {
   background: var(--win-navy);
   color: #fff;
   outline: none;
-}
-
-.start-sep {
-  height: 2px;
-  margin: 4px 2px;
-  border-top: 1px solid var(--win-shadow);
-  border-bottom: 1px solid var(--win-light);
 }
 
 /* React Tabs */
@@ -577,8 +548,7 @@ button:focus-visible,
     --taskbar-h: 48px;
   }
 
-  .desktop-icons,
-  .quick-launch {
+  .desktop-icons {
     display: none;
   }
 

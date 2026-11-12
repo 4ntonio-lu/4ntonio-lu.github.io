@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import App from './App';
+import { profile } from './content';
 
 function Pathname() {
   const { pathname } = useLocation();
@@ -119,6 +120,26 @@ describe('App', () => {
     expect(taskbar().queryByRole('button', { name: 'Resume' })).not.toBeInTheDocument();
   });
 
+  it('selects a desktop shortcut on click and keeps its address for a double-click', async () => {
+    renderAt('/');
+    const linkedIn = desktop().getByRole('link', { name: 'LinkedIn' });
+    const mail = desktop().getByRole('link', { name: 'Mail' });
+
+    await userEvent.click(linkedIn);
+
+    expect(linkedIn).toHaveAttribute('aria-pressed', 'true');
+    expect(linkedIn).toHaveAttribute(
+      'href',
+      profile.links.find((link) => link.label === 'LinkedIn')?.url,
+    );
+    expect(linkedIn).toHaveAttribute('target', '_blank');
+    expect(mail).toHaveAttribute('href', profile.links.find((link) => link.label === 'Mail')?.url);
+    expect(mail).not.toHaveAttribute('target');
+    expect(taskbar().queryByRole('link', { name: 'LinkedIn' })).not.toBeInTheDocument();
+    expect(taskbar().queryByRole('link', { name: 'Mail' })).not.toBeInTheDocument();
+    expect(taskbar().queryByRole('link', { name: 'Resume' })).not.toBeInTheDocument();
+  });
+
   it('minimizes to the taskbar and restores from that button', async () => {
     renderAt('/about');
 
@@ -163,18 +184,15 @@ describe('App', () => {
     await userEvent.click(start);
     expect(start).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('menuitem', { name: 'Projects' })).toBeInTheDocument();
+    const linkedIn = profile.links.find((link) => link.label === 'LinkedIn');
+    const mail = profile.links.find((link) => link.label === 'Mail');
     expect(screen.getByRole('menuitem', { name: 'LinkedIn' })).toHaveAttribute(
       'href',
-      expect.stringContaining('linkedin.com'),
+      linkedIn?.url,
     );
-    expect(screen.getByRole('menuitem', { name: 'Mail' })).toHaveAttribute(
-      'href',
-      expect.stringContaining('mailto:'),
-    );
-    expect(screen.getByRole('menuitem', { name: 'Resume PDF' })).toHaveAttribute(
-      'href',
-      expect.stringContaining('Resume.pdf'),
-    );
+    expect(screen.getByRole('menuitem', { name: 'Mail' })).toHaveAttribute('href', mail?.url);
+    expect(screen.queryByRole('menuitem', { name: 'Resume PDF' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Quick launch' })).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('menuitem', { name: 'Projects' }));
     expect(screen.getByRole('dialog', { name: 'Projects' })).toBeInTheDocument();

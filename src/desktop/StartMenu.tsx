@@ -1,6 +1,5 @@
 import { JSX, useEffect, useRef, type KeyboardEvent } from 'react';
-import { contentImage, profile, resumeUrl } from '../content';
-import { apps } from './apps';
+import { apps, desktopLinks } from './apps';
 import { useDesktop } from './useDesktop';
 
 function StartMenu({ onClose }: { onClose: () => void }): JSX.Element {
@@ -31,15 +30,6 @@ function StartMenu({ onClose }: { onClose: () => void }): JSX.Element {
     }
   };
 
-  const shortcuts = [
-    ...profile.links.map((link) => ({
-      label: link.label,
-      url: link.url,
-      icon: contentImage(link.icon),
-    })),
-    { label: 'Resume PDF', url: resumeUrl, icon: apps.find((app) => app.id === 'resume')!.icon },
-  ];
-
   return (
     <div
       ref={menuRef}
@@ -65,20 +55,19 @@ function StartMenu({ onClose }: { onClose: () => void }): JSX.Element {
             <span>{app.title}</span>
           </button>
         ))}
-        <div className="start-sep" role="separator" />
-        {shortcuts.map((shortcut) => (
+        {desktopLinks.map((link) => (
           <a
-            key={shortcut.url}
+            key={link.id}
             role="menuitem"
             className="start-item"
-            href={shortcut.url}
-            {...(shortcut.url.startsWith('mailto:')
+            href={link.url}
+            {...(link.url.startsWith('mailto:')
               ? {}
               : { target: '_blank', rel: 'noopener noreferrer' })}
             onClick={onClose}
           >
-            <img src={shortcut.icon} alt="" draggable={false} />
-            <span>{shortcut.label}</span>
+            <img src={link.icon} alt="" draggable={false} />
+            <span>{link.title}</span>
           </a>
         ))}
       </div>

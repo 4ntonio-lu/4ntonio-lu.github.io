@@ -1,37 +1,9 @@
 import { JSX, useEffect, useRef, useState } from 'react';
-import { contentImage, profile, resumeUrl } from '../content';
 import { img } from '../assets/images/img';
 import TrayClock from '../components/elements/TrayClock';
-import { appById, apps } from './apps';
+import { appById } from './apps';
 import { useDesktop } from './useDesktop';
 import StartMenu from './StartMenu';
-
-function QuickLaunch(): JSX.Element {
-  const links = [
-    ...profile.links.map((link) => ({
-      label: link.label,
-      url: link.url,
-      icon: contentImage(link.icon),
-    })),
-    { label: 'Resume', url: resumeUrl, icon: apps.find((app) => app.id === 'resume')!.icon },
-  ];
-
-  return (
-    <div className="quick-launch" role="group" aria-label="Quick launch">
-      {links.map((link) => (
-        <a
-          key={link.url}
-          href={link.url}
-          {...(link.url.startsWith('mailto:')
-            ? {}
-            : { target: '_blank', rel: 'noopener noreferrer' })}
-        >
-          <img src={link.icon} alt={link.label} />
-        </a>
-      ))}
-    </div>
-  );
-}
 
 function Taskbar(): JSX.Element {
   const { windows, focusedId, run } = useDesktop();
@@ -69,8 +41,6 @@ function Taskbar(): JSX.Element {
       </button>
 
       {menuOpen && <StartMenu onClose={() => setMenuOpen(false)} />}
-
-      <QuickLaunch />
 
       <div className="taskbar-windows">
         {windows.map((window) => {
