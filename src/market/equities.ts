@@ -25,6 +25,8 @@ export type EquitySnapshot = {
   candles: Candle[];
   /** Fifteen-minute bars for the last few sessions. Empty until the worker sends them. */
   intraday: Candle[];
+  /** Yahoo quote market cap. Absent when the quote has no figure. */
+  marketCap?: number;
   asOf: number;
 };
 
@@ -32,7 +34,7 @@ export type EquitySnapshot = {
 export const EQUITY_TTL_MS = 15 * 60 * 1000;
 
 export function equityCacheKey(symbol: string): string {
-  return `market:equity:v2:${symbol}`;
+  return `market:equity:v3:${symbol}`;
 }
 
 function parseCandles(rows: unknown): Candle[] {
@@ -70,6 +72,7 @@ export function parseEquityPayload(data: unknown, asOf = Date.now()): EquitySnap
     previousClose?: unknown;
     candles?: unknown;
     intraday?: unknown;
+    marketCap?: unknown;
   };
   if (
     typeof record.symbol !== 'string' ||
@@ -82,18 +85,25 @@ export function parseEquityPayload(data: unknown, asOf = Date.now()): EquitySnap
 
   const candles = parseCandles(record.candles);
   if (candles.length < 2) throw new Error('Equity chart was empty');
+  const marketCap =
+    typeof record.marketCap === 'number' &&
+    Number.isFinite(record.marketCap) &&
+    record.marketCap > 0
+      ? record.marketCap
+      : undefined;
   return {
     symbol: record.symbol,
     price: record.price,
     previousClose: record.previousClose,
     candles,
     intraday: parseCandles(record.intraday),
+    ...(marketCap != null ? { marketCap } : {}),
     asOf,
   };
 }
 
 export async function fetchEquity(symbol: string): Promise<EquitySnapshot> {
-  // `series` misses an edge cache that was stored before intraday bars existed.
-  const data = await fetchWorkerJson({ type: 'equity', symbol, series: '2' });
+  // `series` misses an edge cache stored before the quote included market cap.
+  const data = await fetchWorkerJson({ type: 'equity', symbol, series: '3' });
   return parseEquityPayload(data);
 }

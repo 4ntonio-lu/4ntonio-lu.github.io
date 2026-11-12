@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { EQUITIES, fetchEquity, parseEquityPayload } from './equities';
+import { EQUITIES, fetchEquity, parseEquityPayload, type EquitySnapshot } from './equities';
+import { equityStatRows } from './stats';
 
 describe('equities', () => {
   afterEach(() => {
@@ -38,7 +39,42 @@ describe('equities', () => {
     );
     expect(snapshot.candles).toHaveLength(2);
     expect(snapshot.asOf).toBe(50);
+    expect(snapshot.marketCap).toBeUndefined();
+    expect(
+      parseEquityPayload(
+        {
+          symbol: 'AAPL',
+          price: 110,
+          previousClose: 105,
+          marketCap: 5.16e12,
+          candles: [
+            { t: 1, o: 1, h: 2, l: 1, c: 1, v: 1 },
+            { t: 2, o: 1, h: 2, l: 1, c: 2, v: 1 },
+          ],
+        },
+        50,
+      ).marketCap,
+    ).toBe(5.16e12);
     expect(() => parseEquityPayload({ symbol: 'AAPL', price: 1 })).toThrow(/Bad equity/);
+  });
+
+  it('shows market cap like the crypto row and leaves it out when Yahoo has none', () => {
+    const snapshot: EquitySnapshot = {
+      symbol: 'SPY',
+      price: 10,
+      previousClose: 9,
+      candles: [
+        { t: 1, o: 1, h: 2, l: 1, c: 1, v: 1 },
+        { t: 2, o: 1, h: 2, l: 1, c: 2, v: 1 },
+      ],
+      intraday: [],
+      asOf: 1,
+    };
+    expect(equityStatRows(snapshot).some((row) => row.label === 'Market cap')).toBe(false);
+    expect(equityStatRows({ ...snapshot, marketCap: 5.16e12 })[0]).toEqual({
+      label: 'Market cap',
+      value: '5.2t',
+    });
   });
 
   it('asks the worker for one symbol and does not send a key', async () => {
@@ -60,7 +96,7 @@ describe('equities', () => {
     const snapshot = await fetchEquity('AAPL');
     expect(snapshot.price).toBe(10);
     expect(urls).toEqual([
-      'https://cloudflare-worker.4ntonio-lu.workers.dev/?type=equity&symbol=AAPL&series=2',
+      'https://cloudflare-worker.4ntonio-lu.workers.dev/?type=equity&symbol=AAPL&series=3',
     ]);
   });
 });

@@ -71,6 +71,11 @@ export function cryptoStatRows(quote: Quote): StatRow[] {
 /** Rows the stocks window can fill from the quote and the daily candles. */
 export function equityStatRows(snapshot: EquitySnapshot): StatRow[] {
   const rows: StatRow[] = [];
+  add(
+    rows,
+    'Market cap',
+    typeof snapshot.marketCap === 'number' ? formatMarketCap(snapshot.marketCap) : undefined,
+  );
   const dayPct = percentChange(snapshot.previousClose, snapshot.price);
   add(rows, 'Day change', dayPct == null ? undefined : formatSignedPercent(dayPct));
   add(rows, 'Day $', formatSignedUsd(snapshot.price - snapshot.previousClose));

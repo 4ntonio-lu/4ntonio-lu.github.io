@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchYahooChart, parseYahooChart, yahooChartUrl } from '../src/yahoo';
+import { fetchYahooChart, parseYahooChart, readYahooSize, yahooChartUrl } from '../src/yahoo';
 
 describe('parseYahooChart', () => {
 	it('turns a split-adjusted Yahoo chart into candles and a day change', () => {
@@ -57,6 +57,30 @@ describe('parseYahooChart', () => {
 	});
 });
 
+describe('readYahooSize', () => {
+	it('reads the quote market cap and ignores a fund that only has net assets', () => {
+		expect(readYahooSize({ quoteSummary: { result: [{ price: { marketCap: { raw: 5.16e12 } } }] } })).toBe(5.16e12);
+		expect(
+			readYahooSize({
+				quoteSummary: {
+					result: [
+						{
+							price: { regularMarketPrice: { raw: 10 } },
+							defaultKeyStatistics: { sharesOutstanding: { raw: 4 } },
+						},
+					],
+				},
+			}),
+		).toBe(40);
+		expect(
+			readYahooSize({
+				quoteSummary: { result: [{ summaryDetail: { totalAssets: { raw: 7.9e11 } } }] },
+			}),
+		).toBeNull();
+		expect(readYahooSize(null)).toBeNull();
+	});
+});
+
 describe('fetchYahooChart', () => {
 	afterEach(() => {
 		vi.unstubAllGlobals();
@@ -65,8 +89,16 @@ describe('fetchYahooChart', () => {
 	it('loads daily history and fifteen-minute bars for the one-day chart', async () => {
 		const urls: string[] = [];
 		vi.stubGlobal('fetch', (input: RequestInfo) => {
-			urls.push(String(input));
-			const intraday = String(input).includes('interval=15m');
+			const url = String(input);
+			urls.push(url);
+			if (url.includes('fc.yahoo.com')) {
+				return Promise.resolve(new Response(null, { status: 404, headers: { 'set-cookie': 'A3=abc; Path=/' } }));
+			}
+			if (url.includes('getcrumb')) return Promise.resolve(new Response('crumb'));
+			if (url.includes('quoteSummary')) {
+				return Promise.resolve(Response.json({ quoteSummary: { result: [{ price: { marketCap: { raw: 5.16e12 } } }] } }));
+			}
+			const intraday = url.includes('interval=15m');
 			const body = {
 				chart: {
 					result: [
@@ -85,12 +117,14 @@ describe('fetchYahooChart', () => {
 
 		const payload = await fetchYahooChart('AAPL');
 		expect(yahooChartUrl('AAPL', '1d', '5y')).toBe('https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=5y');
-		expect(urls).toEqual([
+		expect(urls.filter((url) => url.includes('/chart/'))).toEqual([
 			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=5y',
 			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=15m&range=5d',
 		]);
+		expect(urls.some((url) => url.includes('/quoteSummary/AAPL') && url.includes('modules=price'))).toBe(true);
 		expect(payload?.price).toBe(110);
 		expect(payload?.previousClose).toBe(1.5);
+		expect(payload?.marketCap).toBe(5.16e12);
 		expect(payload?.intraday.map((candle) => candle.c)).toEqual([1.5, 11]);
 	});
 });

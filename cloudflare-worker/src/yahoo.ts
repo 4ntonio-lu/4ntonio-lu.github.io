@@ -19,9 +19,13 @@ export type EquitySeries = {
 
 export type EquityPayload = EquitySeries & {
 	intraday: EquityCandle[];
+	/** Present when Yahoo's quote has a market cap, or shares outstanding times price. */
+	marketCap?: number;
 };
 
 const YAHOO_CHART = 'https://query1.finance.yahoo.com/v8/finance/chart';
+const YAHOO_CRUMB = 'https://query1.finance.yahoo.com/v1/test/getcrumb';
+const YAHOO_SUMMARY = 'https://query1.finance.yahoo.com/v10/finance/quoteSummary';
 
 function round4(value: number): number {
 	return Math.round(value * 10000) / 10000;
@@ -112,9 +116,92 @@ async function fetchYahooSeries(symbol: string, interval: string, range: string)
 	return parseYahooChart(symbol, await response.json());
 }
 
+function yahooRaw(value: unknown): number | null {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	if (value && typeof value === 'object' && typeof (value as { raw?: unknown }).raw === 'number') {
+		const raw = (value as { raw: number }).raw;
+		return Number.isFinite(raw) ? raw : null;
+	}
+	return null;
+}
+
+/**
+ * Market cap from Yahoo's quoteSummary quote. `price.marketCap` is the field.
+ * When that is missing, shares outstanding times the quote price is the same figure.
+ * Net assets are not a market cap, so an ETF with only that number stays blank.
+ */
+export function readYahooSize(data: unknown): number | null {
+	if (!data || typeof data !== 'object') return null;
+	const result = (data as { quoteSummary?: { result?: unknown[] } }).quoteSummary?.result?.[0];
+	if (!result || typeof result !== 'object') return null;
+	const record = result as {
+		price?: { marketCap?: unknown; regularMarketPrice?: unknown; sharesOutstanding?: unknown };
+		summaryDetail?: { marketCap?: unknown };
+		defaultKeyStatistics?: { sharesOutstanding?: unknown };
+	};
+	const quoted = yahooRaw(record.price?.marketCap) ?? yahooRaw(record.summaryDetail?.marketCap);
+	if (quoted != null && quoted > 0) return quoted;
+	const shares = yahooRaw(record.defaultKeyStatistics?.sharesOutstanding) ?? yahooRaw(record.price?.sharesOutstanding);
+	const price = yahooRaw(record.price?.regularMarketPrice);
+	if (shares != null && price != null && shares > 0 && price > 0) return shares * price;
+	return null;
+}
+
+function cookieHeader(response: Response): string {
+	const lines = response.headers.getSetCookie();
+	const fallback = response.headers.get('set-cookie');
+	const parts = lines.length > 0 ? lines : fallback ? [fallback] : [];
+	return parts
+		.map((line) => line.split(';')[0]?.trim() ?? '')
+		.filter((part) => part.length > 0)
+		.join('; ');
+}
+
+/** Yahoo's quote market cap. A missing cookie or an empty quote leaves it off the payload. */
+async function fetchYahooMarketCap(symbol: string): Promise<number | null> {
+	let seed: Response;
+	try {
+		seed = await fetch('https://fc.yahoo.com', { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' } });
+	} catch {
+		return null;
+	}
+	const cookie = cookieHeader(seed);
+	if (!cookie) return null;
+
+	let crumbResponse: Response;
+	try {
+		crumbResponse = await fetch(YAHOO_CRUMB, {
+			headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/plain', Cookie: cookie },
+		});
+	} catch {
+		return null;
+	}
+	if (!crumbResponse.ok) return null;
+	const crumb = (await crumbResponse.text()).trim();
+	if (!crumb || crumb.startsWith('{') || crumb.startsWith('<')) return null;
+
+	const url = new URL(`${YAHOO_SUMMARY}/${encodeURIComponent(symbol)}`);
+	url.searchParams.set('modules', 'price,summaryDetail,defaultKeyStatistics');
+	url.searchParams.set('crumb', crumb);
+	let quote: Response;
+	try {
+		quote = await fetch(url, {
+			headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json', Cookie: cookie },
+		});
+	} catch {
+		return null;
+	}
+	if (!quote.ok) return null;
+	return readYahooSize(await quote.json());
+}
+
 /** Daily history plus fifteen-minute bars, so a one-day chart is one session of candles. */
 export async function fetchYahooChart(symbol: string): Promise<EquityPayload | null> {
-	const [daily, intraday] = await Promise.all([fetchYahooSeries(symbol, '1d', '5y'), fetchYahooSeries(symbol, '15m', '5d')]);
+	const [daily, intraday, marketCap] = await Promise.all([
+		fetchYahooSeries(symbol, '1d', '5y'),
+		fetchYahooSeries(symbol, '15m', '5d'),
+		fetchYahooMarketCap(symbol),
+	]);
 	if (!daily) return null;
-	return { ...daily, intraday: intraday?.candles ?? [] };
+	return { ...daily, intraday: intraday?.candles ?? [], ...(marketCap != null ? { marketCap } : {}) };
 }

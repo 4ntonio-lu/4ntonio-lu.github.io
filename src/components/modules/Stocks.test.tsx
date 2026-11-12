@@ -31,6 +31,7 @@ function snapshot(now: number): EquitySnapshot {
     symbol: 'AAPL',
     price: 110,
     previousClose: 105,
+    marketCap: 5.16e12,
     asOf: now,
     intraday: [
       { t: Date.UTC(2026, 10, 11, 14, 35), o: 100, h: 101, l: 99, c: 100, v: 10 },
@@ -103,6 +104,10 @@ describe('Stocks', () => {
       offset: false,
       bounds: 'data',
     });
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
+      'Market cap',
+    );
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent('5.2t');
     expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
       'Prev close',
     );
