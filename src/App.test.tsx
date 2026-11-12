@@ -77,7 +77,7 @@ describe('App', () => {
 
     expect(screen.getByTitle('Resume PDF')).toHaveAttribute(
       'src',
-      expect.stringContaining('Resume.pdf'),
+      expect.stringMatching(/Resume\.pdf#navpanes=0&view=Fit$/),
     );
     const dialog = screen.getByRole('dialog', { name: 'Resume' });
     expect(dialog).toHaveStyle({

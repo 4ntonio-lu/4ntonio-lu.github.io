@@ -10,7 +10,7 @@ function Resume(): JSX.Element {
       fillHeight
       content={
         <iframe
-          src={`${resumeUrl}#navpanes=0&view=FitH`}
+          src={`${resumeUrl}#navpanes=0&view=Fit`}
           className="resume-page"
           onMouseDown={(e) => e.stopPropagation()}
           title="Resume PDF"
