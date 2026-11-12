@@ -8,18 +8,9 @@
       "logo": "trimble.png",
       "start": "2024-05",
       "end": "2024-09",
-      "skills": [
-        "Python",
-        "Flask",
-        "JavaScript",
-        "ReactJS",
-        "NodeJS",
-        "SQL Server",
-        "GPT-4 API",
-        "HTML/CSS"
-      ],
+      "skills": ["Python", "Flask", "JavaScript", "ReactJS", "NodeJS", "MSSQL", "HTML/CSS"],
       "bullets": [
-        "Designed and implemented a full-stack AI application, utilizing OpenAI's GPT-4 API, Python, SQL Server, and SQLAlchemy ORM to transform natural language queries into structured database queries. Enabled dynamic report generation and data insights without requiring SQL expertise from users",
+        "Designed and implemented a full-stack AI application, utilizing OpenAI's GPT-4 API, Python, MSSQL, and SQLAlchemy ORM to transform natural language queries into structured database queries. Enabled dynamic report generation and data insights without requiring SQL expertise from users",
         "Built a responsive web application with ReactJS, NodeJS, and Flask to serve as a conversational interface for the AI system. Users could input free form questions, receive instant data responses, and export results, reducing reliance on technical teams for ad hoc reporting"
       ]
     },
@@ -30,13 +21,23 @@
       "logo": "microchip.png",
       "start": "2022-03",
       "end": "2023-11",
-      "skills": ["C#", "JavaScript", "SQL Server", "MySQL", "ASP.NET MVC", "jQuery", "HTML/CSS"],
+      "skills": ["C#", "JavaScript", "MSSQL", "MySQL", "ASP.NET MVC", "jQuery", "HTML/CSS"],
       "bullets": [
         "Primary developer of a C# ASP.NET MVC web application that empowered users to autonomously customize data entry forms and display templates, reducing turnaround time for UI updates by 95% and eliminating dependency on developer interventions",
         "Partnered with stakeholders to decompose features into actionable tasks, provide time estimates, and prioritize deployments based on user impact. Established feedback loops using customer metrics to drive iterative improvements",
         "Applied coding standards and best practices through code reviews, wrote maintainable and extensible code with guidance, used debugging tools to proactively and reactively resolve issues, ensuring code quality and reliability",
         "Developed RESTful APIs to enable seamless integration with internal systems, standardizing data exchange and reducing manual workflows"
       ]
+    },
+    {
+      "company": "Charles Schwab",
+      "role": "Software Engineer",
+      "location": "Not listed",
+      "logo": "charles-schwab.png",
+      "start": "2025-12",
+      "end": null,
+      "skills": ["C#", "MSSQL", "Angular"],
+      "bullets": ["Details coming soon."]
     }
   ]
 }

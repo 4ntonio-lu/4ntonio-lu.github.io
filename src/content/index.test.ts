@@ -34,7 +34,11 @@ describe('content', () => {
   });
 
   it('shows experiences and projects newest first', () => {
-    expect(experiences.map((job) => job.company)).toEqual(['Trimble', 'Microchip']);
+    expect(experiences.map((job) => job.company)).toEqual([
+      'Charles Schwab',
+      'Trimble',
+      'Microchip',
+    ]);
     expect(projects.map((project) => project.name)).toEqual([
       'Portfolio',
       'Ticket Tracker',
