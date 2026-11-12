@@ -59,9 +59,13 @@ describe('Crypto', () => {
     expect(await screen.findByRole('tab', { name: 'Bitcoin' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Bitcoin' })).toBeInTheDocument();
     expect(screen.getByText('$73,000.00')).toBeInTheDocument();
-    expect(screen.getByText('Market Cap: 1.5t')).toBeInTheDocument();
+    expect(screen.queryByText('Market Cap: 1.5t')).not.toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent('1.5t');
+    expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '6M' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
-    expect(screen.getByText(/this range/).closest('p')).toHaveTextContent('20.00%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('20.00%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $120.00');
     expect(screen.getByTestId('price-chart')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Last updated');
     expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent(
@@ -81,7 +85,7 @@ describe('Crypto', () => {
     await userEvent.click(screen.getByRole('button', { name: '1W' }));
 
     expect(screen.getByRole('button', { name: '1W', pressed: true })).toBeInTheDocument();
-    expect(screen.getByText(/this range/).closest('p')).toHaveTextContent('9.09%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('9.09%');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

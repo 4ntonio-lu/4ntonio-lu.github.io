@@ -51,8 +51,11 @@ describe('Stocks', () => {
     expect(screen.getByText('$110.00')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'AAPL Apple', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'SPY S&P 500' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '6M' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
-    expect(screen.getByText(/this range/).closest('p')).toHaveTextContent('37.50%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High');
     expect(screen.getByTestId('candle-chart')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Data: Yahoo Finance' })).toHaveAttribute(
       'href',
@@ -63,7 +66,7 @@ describe('Stocks', () => {
     await userEvent.click(screen.getByRole('button', { name: '1M' }));
 
     expect(screen.getByRole('button', { name: '1M', pressed: true })).toBeInTheDocument();
-    expect(screen.getByText(/this range/).closest('p')).toHaveTextContent('10.00%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('10.00%');
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

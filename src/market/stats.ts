@@ -1,4 +1,10 @@
-import { formatCompact, formatSignedPercent, formatSignedUsd, formatUsd } from './format';
+import {
+  formatCompact,
+  formatMarketCap,
+  formatSignedPercent,
+  formatSignedUsd,
+  formatUsd,
+} from './format';
 import type { Quote } from './types';
 
 export type StatRow = {
@@ -21,6 +27,11 @@ function add(rows: StatRow[], label: string, value: string | undefined) {
 /** Rows the crypto window can fill from the CoinGecko info payload. */
 export function cryptoStatRows(quote: Quote): StatRow[] {
   const rows: StatRow[] = [];
+  add(
+    rows,
+    'Market cap',
+    typeof quote.marketCap === 'number' ? formatMarketCap(quote.marketCap) : undefined,
+  );
   add(rows, '24h change', formatSignedPercent(quote.changePct24h));
   add(
     rows,

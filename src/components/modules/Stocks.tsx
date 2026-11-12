@@ -37,6 +37,7 @@ import {
 } from '../../market/series';
 import type { Candle } from '../../market/types';
 import RangeButtons from '../market/RangeButtons';
+import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
 
 ChartJS.register(CandlestickController, CandlestickElement, LinearScale, Tooltip);
@@ -129,9 +130,13 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
 function ChangeText({ value, caption }: { value: number; caption: string }): JSX.Element {
   const up = value >= 0;
   return (
-    <p className={`m-0 flex items-center text-xl ${up ? 'text-green-700' : 'text-red-700'}`}>
-      {up ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
-      <span className="ml-1 text-base text-[#272727]">{caption}</span>
+    <p
+      className={`m-0 flex items-baseline gap-1 text-lg leading-none ${up ? 'text-green-700' : 'text-red-700'}`}
+    >
+      <span>
+        {up ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
+      </span>
+      <span className="text-sm text-[#272727]">{caption}</span>
     </p>
   );
 }
@@ -233,12 +238,16 @@ function Stocks(): JSX.Element {
   const equity = EQUITIES.find((item) => item.symbol === symbol) ?? EQUITIES[0];
   const snapshot = snapshots[symbol];
   const days = equityRangeDays(range);
-  const candles = snapshot ? sliceByDays(snapshot.candles, days) : [];
+  const candles = snapshot ? sliceByDays(snapshot.candles, days, 1) : [];
   const loading = loadingSymbol === symbol;
   const failed = failedSymbol === symbol && !snapshot;
   const dayMove = snapshot ? percentChange(snapshot.previousClose, snapshot.price) : null;
   const rangeMove =
-    candles.length >= 2 ? percentChange(candles[0].c, candles[candles.length - 1].c) : null;
+    candles.length >= 2
+      ? percentChange(candles[0].c, candles[candles.length - 1].c)
+      : candles.length === 1
+        ? percentChange(candles[0].o, candles[0].c)
+        : null;
   const high = candles.length ? Math.max(...candles.map((candle) => candle.h)) : null;
   const low = candles.length ? Math.min(...candles.map((candle) => candle.l)) : null;
 
@@ -251,27 +260,24 @@ function Stocks(): JSX.Element {
           <div className="flex flex-col gap-3 sm:flex-row">
             <SymbolList symbol={symbol} onSelect={setSymbol} />
             <div className="min-w-0 flex-1">
-              <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <h1 className="m-0 text-2xl">
-                  {equity.symbol} {equity.name}
+              <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h1 className="m-0 text-lg leading-none">
+                  {equity.symbol} <span className="text-[#272727]">{equity.name}</span>
                 </h1>
-                {snapshot && <p className="m-0 text-2xl">${formatUsd(snapshot.price)}</p>}
+                {snapshot && (
+                  <p className="m-0 text-lg leading-none">${formatUsd(snapshot.price)}</p>
+                )}
                 {dayMove != null && <ChangeText value={dayMove} caption="day" />}
               </div>
-              <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
                 <RangeButtons
                   ranges={EQUITY_RANGES}
                   value={range}
                   onChange={(id) => setRange(id as EquityRangeId)}
                 />
-                {rangeMove != null && <ChangeText value={rangeMove} caption="this range" />}
-                {high != null && low != null && (
-                  <p className="m-0 text-sm text-[#272727]">
-                    High ${formatUsd(high)} · Low ${formatUsd(low)}
-                  </p>
-                )}
+                <RangeSummary change={rangeMove} high={high} low={low} />
               </div>
-              {candles.length >= 2 && snapshot ? (
+              {candles.length >= 1 && snapshot ? (
                 <>
                   <p className="sr-only">
                     {equity.name} closed at ${formatUsd(snapshot.price)},{' '}

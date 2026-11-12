@@ -1,10 +1,10 @@
 const DAY_MS = 86_400_000;
 
 export const LINE_RANGES = [
+  { id: '1D', label: '1D', days: 1 },
   { id: '1W', label: '1W', days: 7 },
   { id: '1M', label: '1M', days: 30 },
   { id: '3M', label: '3M', days: 90 },
-  { id: '6M', label: '6M', days: 180 },
   { id: '1Y', label: '1Y', days: 365 },
 ] as const;
 
@@ -12,9 +12,9 @@ export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
 
 /** Daily candles, sliced on the client from one five-year download. */
 export const EQUITY_RANGES = [
+  { id: '1D', label: '1D', days: 1 },
   { id: '1M', label: '1M', days: 30 },
   { id: '3M', label: '3M', days: 90 },
-  { id: '6M', label: '6M', days: 180 },
   { id: '1Y', label: '1Y', days: 365 },
   { id: '5Y', label: '5Y', days: 1825 },
 ] as const;
@@ -32,13 +32,17 @@ export function equityRangeDays(id: EquityRangeId): number {
 }
 
 /** Keep points in the last `days` before the newest point. Ranges share one series. */
-export function sliceByDays<T extends { t: number }>(points: readonly T[], days: number): T[] {
+export function sliceByDays<T extends { t: number }>(
+  points: readonly T[],
+  days: number,
+  minPoints = 2,
+): T[] {
   if (points.length === 0) return [];
   const end = points[points.length - 1].t;
   const cutoff = end - days * DAY_MS;
   const sliced = points.filter((point) => point.t >= cutoff);
-  if (sliced.length >= 2) return sliced;
-  return points.slice(-2);
+  if (sliced.length >= minPoints) return sliced;
+  return points.slice(-minPoints);
 }
 
 export function percentChange(from: number, to: number): number | null {

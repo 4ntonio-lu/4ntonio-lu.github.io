@@ -31,7 +31,6 @@ import {
 import {
   formatAxisDate,
   formatClock,
-  formatMarketCap,
   formatSignedPercent,
   formatTooltipDate,
   formatUsd,
@@ -47,6 +46,7 @@ import type { LineRangeId } from '../../market/series';
 import { cryptoStatRows } from '../../market/stats';
 import type { LinePoint, Quote, QuoteBook } from '../../market/types';
 import RangeButtons from '../market/RangeButtons';
+import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
 import StatsPanel from '../market/StatsPanel';
 
@@ -133,9 +133,13 @@ function chartData(points: LinePoint[], days: number): ChartData<'line'> {
 function ChangeText({ value, caption }: { value: number; caption: string }): JSX.Element {
   const up = value >= 0;
   return (
-    <p className={`m-0 flex items-center text-xl ${up ? 'text-green-700' : 'text-red-700'}`}>
-      {up ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
-      <span className="ml-1 text-base text-[#272727]">{caption}</span>
+    <p
+      className={`m-0 flex items-baseline gap-1 text-lg leading-none ${up ? 'text-green-700' : 'text-red-700'}`}
+    >
+      <span>
+        {up ? '▲' : '▼'} {Math.abs(value).toFixed(2)}%
+      </span>
+      <span className="text-sm text-[#272727]">{caption}</span>
     </p>
   );
 }
@@ -252,29 +256,23 @@ function CryptoPrices(): JSX.Element {
                   const bounds = seriesBounds(points.map((point) => point.price));
                   return (
                     <TabPanel key={id}>
-                      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                        {data.image && <img src={data.image} alt="" className="h-10 w-10" />}
-                        <h1 className="m-0 text-2xl">{data.name}</h1>
-                        <p className="m-0 text-2xl">${formatUsd(data.price)}</p>
+                      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {data.image && <img src={data.image} alt="" className="h-7 w-7" />}
+                        <h1 className="m-0 text-lg leading-none">{data.name}</h1>
+                        <p className="m-0 text-lg leading-none">${formatUsd(data.price)}</p>
                         <ChangeText value={data.changePct24h} caption="24h" />
-                        {typeof data.marketCap === 'number' && (
-                          <p className="m-0 text-lg font-semibold text-[#272727] sm:ml-auto">
-                            Market Cap: {formatMarketCap(data.marketCap)}
-                          </p>
-                        )}
                       </div>
-                      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
                         <RangeButtons
                           ranges={LINE_RANGES}
                           value={range}
                           onChange={(id) => setRange(id as LineRangeId)}
                         />
-                        {rangeMove != null && <ChangeText value={rangeMove} caption="this range" />}
-                        {bounds && (
-                          <p className="m-0 text-sm text-[#272727]">
-                            High ${formatUsd(bounds.high)} · Low ${formatUsd(bounds.low)}
-                          </p>
-                        )}
+                        <RangeSummary
+                          change={rangeMove}
+                          high={bounds?.high ?? null}
+                          low={bounds?.low ?? null}
+                        />
                         <button
                           type="button"
                           className="button-shadow px-2 py-0.5 text-sm sm:ml-auto"

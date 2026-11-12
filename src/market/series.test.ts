@@ -20,6 +20,10 @@ describe('series', () => {
     expect(sliceByDays(points, 1).map((point) => point.price)).toEqual([110, 80]);
   });
 
+  it('can keep a single candle for a one-day stock range', () => {
+    expect(sliceByDays(points, 1, 1).map((point) => point.price)).toEqual([80]);
+  });
+
   it('measures percent change and the high/low of the visible range', () => {
     expect(percentChange(100, 110)).toBe(10);
     expect(percentChange(100, 90)).toBe(-10);

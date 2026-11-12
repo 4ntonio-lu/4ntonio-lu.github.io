@@ -13,6 +13,7 @@ const quote: Quote = {
   low24h: 73357,
   volume24h: 23.5e9,
   changePct7d: -2.1,
+  marketCap: 1.48e12,
   marketCapRank: 1,
   circulatingSupply: 19.8e6,
   ath: 73750,
@@ -22,6 +23,7 @@ const quote: Quote = {
 describe('crypto stats', () => {
   it('lists the numbers the info payload already includes', () => {
     expect(cryptoStatRows(quote).map((row) => row.label)).toEqual([
+      'Market cap',
       '24h change',
       '24h $',
       '24h high',

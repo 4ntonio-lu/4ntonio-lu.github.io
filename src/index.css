@@ -460,7 +460,9 @@ label {
   color: #272727;
   background: var(--win-face);
   border: 2px solid;
-  padding: 8px 20px;
+  padding: 4px 12px;
+  font-size: 14px;
+  line-height: 1.2;
   border-top-color: var(--win-light);
   border-right-color: var(--win-dark);
   border-left-color: var(--win-light);
