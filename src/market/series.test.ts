@@ -4,6 +4,7 @@ import {
   seriesBounds,
   sliceByDays,
   equityCandles,
+  equityRangeDays,
   latestSession,
   aggregateCandles,
 } from './series';
@@ -59,6 +60,13 @@ describe('equity candles', () => {
     const shown = equityCandles(daily, intraday, '1D');
     expect(shown.map((candle) => candle.c)).toEqual([41, 43]);
     expect(equityCandles(daily, [], '1D').map((candle) => candle.c)).toEqual([21, 23]);
+  });
+
+  it('keeps one week of daily bars and ignores the intraday session', () => {
+    const week = equityCandles(daily, intraday, '1W');
+    expect(week.map((candle) => candle.c)).toEqual([21, 23]);
+    expect(week.map((candle) => candle.t)).toEqual([Date.UTC(2026, 5, 1), Date.UTC(2026, 5, 2)]);
+    expect(equityRangeDays('1W')).toBe(7);
   });
 
   it('rolls a year into weeks and five years into months', () => {

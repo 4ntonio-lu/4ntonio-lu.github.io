@@ -39,6 +39,7 @@ function snapshot(now: number): EquitySnapshot {
     candles: [
       { t: now - 200 * DAY, o: 79, h: 82, l: 78, c: 80, v: 1_000_000 },
       { t: now - 10 * DAY, o: 99, h: 102, l: 98, c: 100, v: 2_000_000 },
+      { t: now - 3 * DAY, o: 104, h: 106, l: 99, c: 105, v: 500_000 },
       { t: now - DAY, o: 109, h: 112, l: 108, c: 110, v: 3_000_000 },
     ],
   };
@@ -74,6 +75,11 @@ describe('Stocks', () => {
     expect(screen.queryByRole('tab', { name: 'AAPL Apple' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '6M' })).not.toBeInTheDocument();
+    expect(
+      [...screen.getByRole('group', { name: 'Chart range' }).querySelectorAll('button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['1D', '1W', '1M', '3M', '1Y', '5Y']);
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Candles', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Line', pressed: false })).toBeInTheDocument();
@@ -135,6 +141,15 @@ describe('Stocks', () => {
 
     expect(screen.getByRole('button', { name: '1M', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('10.00%');
+
+    await userEvent.click(screen.getByRole('button', { name: '1W' }));
+
+    expect(screen.getByRole('button', { name: '1W', pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Candles', pressed: false })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('4.76%');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $112.00');
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('Low $99.00');
+    expect(fetchSpy).not.toHaveBeenCalled();
 
     writeCache(equityCacheKey('SPY'), {
       ...snapshot(Date.now()),

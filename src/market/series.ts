@@ -12,9 +12,10 @@ export const LINE_RANGES = [
 
 export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
 
-/** Stock ranges. Short ranges use a finer series; long ranges roll daily bars up. */
+/** Stock ranges. 1D uses intraday bars. 1W and the longer ranges use daily bars. */
 export const EQUITY_RANGES = [
   { id: '1D', label: '1D', days: 1 },
+  { id: '1W', label: '1W', days: 7 },
   { id: '1M', label: '1M', days: 30 },
   { id: '3M', label: '3M', days: 90 },
   { id: '1Y', label: '1Y', days: 365 },
@@ -94,7 +95,7 @@ export function aggregateCandles(candles: readonly Candle[], unit: 'week' | 'mon
 
 /**
  * Candles for the selected stock range. 1D prefers the latest intraday session.
- * 1Y and 5Y are rolled up so each candle is wide enough to read.
+ * 1W is that week's daily bars. 1Y and 5Y are rolled up so each candle is wide enough to read.
  */
 export function equityCandles(
   daily: readonly Candle[],
