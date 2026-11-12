@@ -8,7 +8,9 @@ import { equityCacheKey, type EquitySnapshot } from '../../market/equities';
 import Stocks from './Stocks';
 
 vi.mock('react-chartjs-2', () => ({
-  Chart: () => <div data-testid="candle-chart" />,
+  Chart: ({ type }: { type?: string }) => (
+    <div data-testid={type === 'line' ? 'line-chart' : 'candle-chart'} />
+  ),
 }));
 
 const DAY = 86_400_000;
@@ -60,6 +62,8 @@ describe('Stocks', () => {
     expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '6M' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Candles', pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Line', pressed: false })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High');
     expect(screen.getByTestId('candle-chart')).toBeInTheDocument();
@@ -80,10 +84,17 @@ describe('Stocks', () => {
     );
     expect(fetchSpy).not.toHaveBeenCalled();
 
+    await userEvent.click(screen.getByRole('button', { name: 'Line' }));
+    expect(screen.getByRole('button', { name: 'Line', pressed: true })).toBeInTheDocument();
+    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+    expect(screen.queryByTestId('candle-chart')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('37.50%');
+
     await userEvent.click(screen.getByRole('button', { name: '1D' }));
     expect(screen.getByRole('button', { name: '1D', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('20.00%');
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $130.00');
+    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: '1M' }));
 

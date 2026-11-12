@@ -1,6 +1,9 @@
 import {
   Chart as ChartJS,
+  Filler,
   LinearScale,
+  LineElement,
+  PointElement,
   Tooltip,
   type ChartData,
   type ChartOptions,
@@ -45,7 +48,17 @@ import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
 import StatsPanel from '../market/StatsPanel';
 
-ChartJS.register(CandlestickController, CandlestickElement, LinearScale, Tooltip);
+ChartJS.register(
+  CandlestickController,
+  CandlestickElement,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+);
+
+type ChartStyle = 'candles' | 'line';
 
 const candleColors = {
   up: '#0b5a0b',
@@ -121,11 +134,100 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
           maxTicksLimit: 6,
           color: '#272727',
           font: { family: win95Font, size: 12 },
-          callback: (value) => {
-            if (typeof value !== 'number') return '';
-            const detail = days <= 1 ? 'time' : days <= 120 ? 'day' : 'auto';
-            return formatAxisDate(value, days, undefined, detail);
+          callback: (value) =>
+            typeof value === 'number'
+              ? formatAxisDate(value, days, undefined, axisDetail(days))
+              : '',
+        },
+      },
+      y: {
+        grid: { color: '#b5b5b5' },
+        ticks: {
+          color: '#272727',
+          font: { family: win95Font, size: 12 },
+          callback: (value) => (typeof value === 'number' ? `$${formatUsd(value)}` : String(value)),
+        },
+      },
+    },
+  };
+}
+
+function axisDetail(days: number): 'auto' | 'day' | 'time' {
+  if (days <= 1) return 'time';
+  if (days <= 120) return 'day';
+  return 'auto';
+}
+
+function lineChartData(candles: Candle[]): ChartData<'line'> {
+  return {
+    datasets: [
+      {
+        data: candles.map((candle) => ({ x: candle.t, y: candle.c })),
+        borderColor: '#000080',
+        backgroundColor: 'rgba(0, 0, 128, 0.12)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointHoverBackgroundColor: '#000080',
+      },
+    ],
+  };
+}
+
+function lineChartOptions(candles: Candle[], days: number): ChartOptions<'line'> {
+  return {
+    responsive: true,
+    aspectRatio: 2.15,
+    animation: { duration: 180 },
+    parsing: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...win95Tooltip,
+        intersect: false,
+        mode: 'index',
+        callbacks: {
+          title(items) {
+            const candle = candles[items[0]?.dataIndex ?? -1];
+            return candle ? formatTooltipDate(candle.t, undefined, days <= 1) : '';
           },
+          label(item) {
+            const index = item.dataIndex;
+            const close = candles[index]?.c;
+            if (close == null) return '';
+            const lines = [`$${formatUsd(close)}`];
+            const prior = candles[index - 1]?.c;
+            if (prior != null) {
+              const day = percentChange(prior, close);
+              if (day != null) lines.push(`${formatSignedPercent(day)} vs prior close`);
+            }
+            const start = candles[0]?.c;
+            if (start != null && index > 0) {
+              const fromStart = percentChange(start, close);
+              if (fromStart != null)
+                lines.push(`${formatSignedPercent(fromStart)} from range start`);
+            }
+            return lines;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        offset: true,
+        grid: { color: '#b5b5b5' },
+        ticks: {
+          maxTicksLimit: 6,
+          color: '#272727',
+          font: { family: win95Font, size: 12 },
+          callback: (value) =>
+            typeof value === 'number'
+              ? formatAxisDate(value, days, undefined, axisDetail(days))
+              : '',
         },
       },
       y: {
@@ -157,6 +259,7 @@ function ChangeText({ value, caption }: { value: number; caption: string }): JSX
 function Stocks(): JSX.Element {
   const [symbol, setSymbol] = useState<EquitySymbol>('AAPL');
   const [range, setRange] = useState<EquityRangeId>('1Y');
+  const [chartStyle, setChartStyle] = useState<ChartStyle>('candles');
   const [snapshots, setSnapshots] = useState<Record<string, EquitySnapshot>>({});
   const [loadingSymbol, setLoadingSymbol] = useState<string | null>(null);
   const [failedSymbol, setFailedSymbol] = useState<string | null>(null);
@@ -281,6 +384,24 @@ function Stocks(): JSX.Element {
                           value={range}
                           onChange={(id) => setRange(id as EquityRangeId)}
                         />
+                        <div className="flex gap-1" role="group" aria-label="Chart style">
+                          <button
+                            type="button"
+                            className="button-shadow px-2 py-0.5 text-sm text-[#272727]"
+                            aria-pressed={chartStyle === 'candles'}
+                            onClick={() => setChartStyle('candles')}
+                          >
+                            Candles
+                          </button>
+                          <button
+                            type="button"
+                            className="button-shadow px-2 py-0.5 text-sm text-[#272727]"
+                            aria-pressed={chartStyle === 'line'}
+                            onClick={() => setChartStyle('line')}
+                          >
+                            Line
+                          </button>
+                        </div>
                         <RangeSummary change={rangeMove} high={high} low={low} />
                         <button
                           type="button"
@@ -297,18 +418,28 @@ function Stocks(): JSX.Element {
                             <>
                               <p className="sr-only">
                                 {equity.name} closed at ${formatUsd(snapshot.price)},{' '}
-                                {formatSignedPercent(rangeMove ?? 0)} over {range}. The candlesticks
-                                run from {formatTooltipDate(candles[0].t)} through{' '}
+                                {formatSignedPercent(rangeMove ?? 0)} over {range}. The{' '}
+                                {chartStyle === 'line' ? 'line' : 'candlesticks'} run from{' '}
+                                {formatTooltipDate(candles[0].t)} through{' '}
                                 {formatTooltipDate(candles[candles.length - 1].t)}.
                                 {snapshot.asOf ? ` Saved ${formatClock(snapshot.asOf)}.` : ''}
                               </p>
                               <div className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] bg-[#c3c3c3] p-1">
-                                <Chart
-                                  type="candlestick"
-                                  data={candleChartData(candles)}
-                                  options={candleChartOptions(candles, days)}
-                                  plugins={[crosshairPlugin]}
-                                />
+                                {chartStyle === 'line' ? (
+                                  <Chart
+                                    type="line"
+                                    data={lineChartData(candles)}
+                                    options={lineChartOptions(candles, days)}
+                                    plugins={[crosshairPlugin]}
+                                  />
+                                ) : (
+                                  <Chart
+                                    type="candlestick"
+                                    data={candleChartData(candles)}
+                                    options={candleChartOptions(candles, days)}
+                                    plugins={[crosshairPlugin]}
+                                  />
+                                )}
                               </div>
                             </>
                           ) : (
