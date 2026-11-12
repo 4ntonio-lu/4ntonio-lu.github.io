@@ -16,6 +16,7 @@ import WindowBox from '../elements/WindowBox';
 import { img } from '../../assets/images/img';
 import 'react-tabs/style/react-tabs.css';
 import { createCryptoRefreshSchedule } from '../../market/backoff';
+import { waitForMinimumLoad } from '../../market/loading';
 import { readCache, writeCache } from '../../market/cache';
 import { crosshairPlugin, win95Font, win95Tooltip } from '../../market/chartChrome';
 import {
@@ -150,6 +151,7 @@ function CryptoPrices(): JSX.Element {
     let active = true;
 
     const refreshPrices = () => {
+      const started = Date.now();
       setRefreshing(true);
       void fetchCryptoQuotes(CRYPTO_IDS)
         .then((next) => {
@@ -166,7 +168,9 @@ function CryptoPrices(): JSX.Element {
           setRefreshError(true);
         })
         .finally(() => {
-          if (active) setRefreshing(false);
+          void waitForMinimumLoad(started).then(() => {
+            if (active) setRefreshing(false);
+          });
         });
     };
 
@@ -221,8 +225,12 @@ function CryptoPrices(): JSX.Element {
       content={
         <div className="m-1 p-1 sm:m-3">
           {!quotes ? (
-            <div role="status" className="px-6 py-10 text-center text-xl text-[#272727]">
-              {refreshError ? "Couldn't load prices." : 'Loading...'}
+            <div className="px-6 py-8">
+              {refreshError && !refreshing ? (
+                <p className="text-center text-xl text-[#272727]">Couldn't load prices.</p>
+              ) : (
+                <RefreshStatus refreshing updatedAt={null} error={false} />
+              )}
             </div>
           ) : (
             <Tabs>
