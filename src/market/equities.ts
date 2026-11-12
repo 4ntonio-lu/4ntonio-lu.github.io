@@ -33,16 +33,6 @@ export function equityCacheKey(symbol: string): string {
   return `market:equity:v1:${symbol}`;
 }
 
-export function equityGroups(): { group: string; items: (typeof EQUITIES)[number][] }[] {
-  const groups: { group: string; items: (typeof EQUITIES)[number][] }[] = [];
-  for (const equity of EQUITIES) {
-    const existing = groups.find((group) => group.group === equity.group);
-    if (existing) existing.items.push(equity);
-    else groups.push({ group: equity.group, items: [equity] });
-  }
-  return groups;
-}
-
 export function parseEquityPayload(data: unknown, asOf = Date.now()): EquitySnapshot {
   if (!data || typeof data !== 'object') throw new Error('Bad equity payload');
   const record = data as {

@@ -47,10 +47,11 @@ describe('Stocks', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole('heading', { name: 'AAPL Apple' })).toBeInTheDocument();
-    expect(screen.getByText('$110.00')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'AAPL Apple', pressed: true })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'SPY S&P 500' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'AAPL', selected: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Apple' })).toBeInTheDocument();
+    expect(screen.getAllByText('$110.00').length).toBeGreaterThan(0);
+    expect(screen.getByRole('tab', { name: 'SPY' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'AAPL Apple' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '6M' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
@@ -68,6 +69,17 @@ describe('Stocks', () => {
 
     expect(screen.getByRole('button', { name: '1M', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('10.00%');
+
+    writeCache(equityCacheKey('SPY'), {
+      ...snapshot(Date.now()),
+      symbol: 'SPY',
+      price: 500,
+      previousClose: 480,
+    });
+    await userEvent.click(screen.getByRole('tab', { name: 'SPY' }));
+
+    expect(screen.getByRole('tab', { name: 'SPY', selected: true })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'S&P 500' })).toBeInTheDocument();
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

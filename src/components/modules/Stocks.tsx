@@ -8,6 +8,8 @@ import {
 import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
 import { useEffect, useState, JSX } from 'react';
 import { Chart } from 'react-chartjs-2';
+import { Tab, TabList, TabPanel, Tabs } from 'react-tabs';
+import 'react-tabs/style/react-tabs.css';
 import WindowBox from '../elements/WindowBox';
 import { img } from '../../assets/images/img';
 import { crosshairPlugin, win95Font, win95Tooltip } from '../../market/chartChrome';
@@ -16,7 +18,6 @@ import {
   EQUITIES,
   EQUITY_TTL_MS,
   equityCacheKey,
-  equityGroups,
   fetchEquity,
   type EquitySnapshot,
   type EquitySymbol,
@@ -142,58 +143,6 @@ function ChangeText({ value, caption }: { value: number; caption: string }): JSX
   );
 }
 
-function SymbolList({
-  symbol,
-  onSelect,
-}: {
-  symbol: EquitySymbol;
-  onSelect: (symbol: EquitySymbol) => void;
-}): JSX.Element {
-  return (
-    <>
-      <label className="block sm:hidden">
-        <span className="sr-only">Symbol</span>
-        <select
-          className="w-full border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] bg-white px-1 py-1 text-[#272727]"
-          value={symbol}
-          onChange={(event) => onSelect(event.target.value as EquitySymbol)}
-        >
-          {equityGroups().map((group) => (
-            <optgroup key={group.group} label={group.group}>
-              {group.items.map((item) => (
-                <option key={item.symbol} value={item.symbol}>
-                  {item.symbol} {item.name}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-      <div className="hidden max-h-80 w-40 shrink-0 overflow-y-auto border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] bg-white sm:block">
-        {equityGroups().map((group) => (
-          <div key={group.group}>
-            <div className="bg-[#000082] px-1 text-sm text-white">{group.group}</div>
-            {group.items.map((item) => {
-              const selected = item.symbol === symbol;
-              return (
-                <button
-                  key={item.symbol}
-                  type="button"
-                  aria-pressed={selected}
-                  onClick={() => onSelect(item.symbol)}
-                  className={`block w-full px-1 py-px text-left text-sm ${selected ? 'bg-[#000082] text-white' : 'text-[#272727]'}`}
-                >
-                  {item.symbol} {item.name}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
 function Stocks(): JSX.Element {
   const [symbol, setSymbol] = useState<EquitySymbol>('AAPL');
   const [range, setRange] = useState<EquityRangeId>('1Y');
@@ -255,62 +204,78 @@ function Stocks(): JSX.Element {
   return (
     <WindowBox
       name="Stocks"
-      width={0.72}
+      width={0.82}
       content={
         <div className="m-1 p-1 sm:m-3">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <SymbolList symbol={symbol} onSelect={setSymbol} />
-            <div className="min-w-0 flex-1">
-              <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h1 className="m-0 text-lg leading-none">
-                  {equity.symbol} <span className="text-[#272727]">{equity.name}</span>
-                </h1>
-                {snapshot && (
-                  <p className="m-0 text-lg leading-none">${formatUsd(snapshot.price)}</p>
-                )}
-                {dayMove != null && <ChangeText value={dayMove} caption="day" />}
-              </div>
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <RangeButtons
-                  ranges={EQUITY_RANGES}
-                  value={range}
-                  onChange={(id) => setRange(id as EquityRangeId)}
-                />
-                <RangeSummary change={rangeMove} high={high} low={low} />
-              </div>
-              {candles.length >= 1 && snapshot ? (
-                <>
-                  <p className="sr-only">
-                    {equity.name} closed at ${formatUsd(snapshot.price)},{' '}
-                    {formatSignedPercent(rangeMove ?? 0)} over {range}. The candlesticks run from{' '}
-                    {formatTooltipDate(candles[0].t)} through{' '}
-                    {formatTooltipDate(candles[candles.length - 1].t)}.
-                    {snapshot.asOf ? ` Saved ${formatClock(snapshot.asOf)}.` : ''}
-                  </p>
-                  <div className="border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] bg-[#c3c3c3] p-1">
-                    <Chart
-                      type="candlestick"
-                      data={candleChartData(candles)}
-                      options={candleChartOptions(candles, days)}
-                      plugins={[crosshairPlugin]}
-                    />
-                  </div>
-                </>
-              ) : (
-                <p className="border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                  {failed
-                    ? `Couldn't load ${equity.name}. The quote service didn't answer.`
-                    : 'Loading chart…'}
-                </p>
-              )}
-              <RefreshStatus
-                refreshing={loading}
-                updatedAt={snapshot?.asOf ?? null}
-                error={failed}
-                errorText={`Couldn't load ${equity.name}.`}
-              />
+          <Tabs
+            selectedIndex={Math.max(
+              0,
+              EQUITIES.findIndex((item) => item.symbol === symbol),
+            )}
+            onSelect={(index) => setSymbol(EQUITIES[index].symbol)}
+          >
+            <TabList>
+              {EQUITIES.map((item) => (
+                <Tab key={item.symbol}>{item.symbol}</Tab>
+              ))}
+            </TabList>
+            <div className="tab-panels">
+              {EQUITIES.map((item) => (
+                <TabPanel key={item.symbol}>
+                  {item.symbol === symbol && (
+                    <div className="min-w-0">
+                      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <h1 className="m-0 text-lg leading-none">{equity.name}</h1>
+                        {snapshot && (
+                          <p className="m-0 text-lg leading-none">${formatUsd(snapshot.price)}</p>
+                        )}
+                        {dayMove != null && <ChangeText value={dayMove} caption="day" />}
+                      </div>
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <RangeButtons
+                          ranges={EQUITY_RANGES}
+                          value={range}
+                          onChange={(id) => setRange(id as EquityRangeId)}
+                        />
+                        <RangeSummary change={rangeMove} high={high} low={low} />
+                      </div>
+                      {candles.length >= 1 && snapshot ? (
+                        <>
+                          <p className="sr-only">
+                            {equity.name} closed at ${formatUsd(snapshot.price)},{' '}
+                            {formatSignedPercent(rangeMove ?? 0)} over {range}. The candlesticks run
+                            from {formatTooltipDate(candles[0].t)} through{' '}
+                            {formatTooltipDate(candles[candles.length - 1].t)}.
+                            {snapshot.asOf ? ` Saved ${formatClock(snapshot.asOf)}.` : ''}
+                          </p>
+                          <div className="border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] bg-[#c3c3c3] p-1">
+                            <Chart
+                              type="candlestick"
+                              data={candleChartData(candles)}
+                              options={candleChartOptions(candles, days)}
+                              plugins={[crosshairPlugin]}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <p className="border-2 border-b-white border-l-[#808080] border-r-white border-t-[#808080] px-3 py-8 text-center text-[#272727]">
+                          {failed
+                            ? `Couldn't load ${equity.name}. The quote service didn't answer.`
+                            : 'Loading chart…'}
+                        </p>
+                      )}
+                      <RefreshStatus
+                        refreshing={loading}
+                        updatedAt={snapshot?.asOf ?? null}
+                        error={failed}
+                        errorText={`Couldn't load ${equity.name}.`}
+                      />
+                    </div>
+                  )}
+                </TabPanel>
+              ))}
             </div>
-          </div>
+          </Tabs>
           <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#272727]">
             <span className="text-[0.8rem] font-semibold">Powered by</span>
             <a
