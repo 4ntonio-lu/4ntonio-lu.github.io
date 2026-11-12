@@ -25,7 +25,18 @@ const MARKS: Record<WeatherKind, string> = {
   storm: rainUrl,
 };
 
+const CLOUD_KINDS = new Set<WeatherKind>(['cloudy', 'fog', 'snow']);
+
 function WeatherMark({ kind, size }: { kind: WeatherKind; size: number }): JSX.Element {
+  // The draft cloud is a wide sprite. Fit it in the same box as the sun and rain
+  // instead of letting that width make it larger.
+  if (CLOUD_KINDS.has(kind)) {
+    return (
+      <span className="weather-mark-slot" style={{ width: size, height: size }}>
+        <img className="weather-mark" src={MARKS[kind]} alt="" draggable={false} />
+      </span>
+    );
+  }
   return <img className="weather-mark" src={MARKS[kind]} alt="" height={size} draggable={false} />;
 }
 
@@ -139,7 +150,7 @@ function Weather(): JSX.Element {
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
               <div className="weather-now">
-                <WeatherMark kind={view.kind} size={40} />
+                <WeatherMark kind={view.kind} size={32} />
                 <span className="weather-temp">{view.tempF} F</span>
                 <span className="weather-condition">{view.condition}</span>
               </div>
@@ -161,7 +172,7 @@ function Weather(): JSX.Element {
                     {view.hours.map((hour) => (
                       <li key={hour.label} className="weather-hour">
                         <span>{hour.label}</span>
-                        <WeatherMark kind={hour.kind} size={32} />
+                        <WeatherMark kind={hour.kind} size={26} />
                         <span>{hour.tempF}</span>
                       </li>
                     ))}
@@ -180,7 +191,7 @@ function Weather(): JSX.Element {
                           {day.highF}/{day.lowF}
                         </span>
                         <span className="weather-day-mark">
-                          <WeatherMark kind={day.kind} size={22} />
+                          <WeatherMark kind={day.kind} size={20} />
                         </span>
                       </li>
                     ))}
