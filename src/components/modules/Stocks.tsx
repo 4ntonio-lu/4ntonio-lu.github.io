@@ -393,7 +393,7 @@ function Stocks(): JSX.Element {
                           value={range}
                           onChange={(id) => setRange(id as EquityRangeId)}
                         />
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-5">
                           <RangeSummary change={rangeMove} high={high} low={low} />
                           <div
                             className="flex gap-1 border-2 border-b-[#808080] border-l-[#ffffff] border-r-[#808080] border-t-[#ffffff] bg-[#c0c0c0] p-0.5"

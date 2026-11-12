@@ -89,6 +89,7 @@ describe('Stocks', () => {
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
     expect(chartStyle).toHaveClass('border-2');
+    expect(chartStyle.parentElement).toHaveClass('gap-5');
     expect(rangeStats).not.toContainElement(chartStyle);
     expect(rangeStats).toHaveTextContent('37.50%');
     expect(rangeStats).toHaveTextContent('High');
