@@ -50,6 +50,7 @@ describe('App', () => {
     '/stocks',
     '/clock',
     '/world-clock',
+    '/weather',
   ])('returns %s to the site root without opening that app', (entry) => {
     renderAt(entry);
 

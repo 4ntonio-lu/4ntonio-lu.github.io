@@ -578,6 +578,171 @@ button:focus-visible,
   }
 }
 
+/* Weather. Flat system colors, the same bevel as the other windows, no rounded corners. */
+.weather {
+  padding: 8px 10px 10px;
+}
+
+.weather-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.weather-select {
+  color: #000;
+  font-family: inherit;
+  font-size: 1rem;
+  background: #fff;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
+  border-radius: 0;
+  box-shadow: inset 1px 1px #000;
+  padding: 1px 2px;
+}
+
+.weather-select:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: 1px;
+}
+
+.weather-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weather-temp {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.weather-condition,
+.weather-temp,
+.weather-hour,
+.weather-stats span {
+  white-space: nowrap;
+}
+
+.weather-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 6px 0 8px;
+}
+
+.weather-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.85fr);
+  gap: 8px;
+}
+
+.weather-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background: var(--win-face);
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
+  box-shadow: inset 1px 1px #000;
+}
+
+.weather-panel h2 {
+  margin: 0;
+  background: var(--win-navy);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.25;
+  padding: 1px 6px 2px;
+}
+
+.weather-hours {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-around;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 4px 8px;
+  list-style: none;
+}
+
+.weather-hour {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.weather-days {
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+}
+
+.weather-day {
+  display: grid;
+  grid-template-columns: 2.6rem 4.4rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+  padding: 1px 4px 1px 6px;
+}
+
+.weather-day.is-today {
+  background: var(--win-navy);
+  color: #fff;
+}
+
+.weather-day-temps {
+  text-align: right;
+}
+
+.weather-day-mark {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.weather-status {
+  margin-top: 8px;
+  padding: 2px 6px;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
+  box-shadow: inset 1px 1px #000;
+}
+
+.weather-status a {
+  color: #000;
+  font-size: 0.8rem;
+}
+
+.weather-message {
+  display: flex;
+  min-height: 8.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  border: 2px solid;
+  border-color: var(--win-shadow) var(--win-light) var(--win-light) var(--win-shadow);
+  box-shadow: inset 1px 1px #000;
+  padding: 12px;
+}
+
+.weather-mark {
+  display: block;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 767px) {
+  .weather-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 600px) {
   .react-tabs__tab-list {
     font-size: 0.85rem;
