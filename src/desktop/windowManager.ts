@@ -29,7 +29,8 @@ export type Action =
 /** Matches `@media (max-width: 767px)` in index.css, one pixel under Tailwind's `md`. */
 export const COMPACT_MAX_WIDTH = 767;
 
-export const CASCADE_ORIGIN_X = 120;
+/** Clears two columns of desktop icons, so a wrapped icon stays visible beside a new window. */
+export const CASCADE_ORIGIN_X = 216;
 export const CASCADE_ORIGIN_Y = 16;
 export const CASCADE_STEP = 26;
 const CASCADE_SLOTS = 8;

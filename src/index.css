@@ -129,11 +129,52 @@ label {
 .desktop-icons {
   position: absolute;
   top: 8px;
+  right: 8px;
+  bottom: 8px;
   left: 8px;
   z-index: 0;
   display: flex;
   flex-direction: column;
+  flex-wrap: wrap;
+  align-content: flex-start;
   gap: 16px;
+}
+
+.world-clock {
+  padding: 10px 12px 12px;
+}
+
+.world-clock table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 6px;
+}
+
+.world-clock th,
+.world-clock td {
+  padding: 4px 8px;
+  background: var(--win-face);
+  box-shadow:
+    inset 1px 1px var(--win-shadow),
+    inset 2px 2px var(--win-dark),
+    inset -1px -1px var(--win-light);
+  font-weight: 400;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.world-clock th {
+  width: 34%;
+}
+
+.world-clock time {
+  font-variant-numeric: tabular-nums;
+}
+
+.world-clock-zone {
+  display: block;
+  color: #404040;
+  font-size: 0.85rem;
 }
 
 .desktop-icon {

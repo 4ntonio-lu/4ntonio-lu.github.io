@@ -46,6 +46,12 @@ export const apps = [
     windowName: 'Stocks',
     icon: img.stocks,
   },
+  {
+    id: 'clock',
+    title: 'World Clock',
+    windowName: 'World Clock',
+    icon: img.clock,
+  },
 ] as const;
 
 export type DesktopApp = (typeof apps)[number];

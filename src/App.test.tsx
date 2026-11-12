@@ -4,7 +4,7 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { profile } from './content';
-import { CASCADE_ORIGIN_Y, CASCADE_STEP } from './desktop/windowManager';
+import { CASCADE_ORIGIN_X, CASCADE_ORIGIN_Y, CASCADE_STEP } from './desktop/windowManager';
 
 function Pathname() {
   const { pathname } = useLocation();
@@ -64,6 +64,16 @@ describe('App', () => {
     expect(screen.getByText('Full Stack Software Engineer Intern')).toBeVisible();
   });
 
+  it('opens the world clock on the root address', async () => {
+    renderAt('/');
+    await userEvent.dblClick(desktop().getByRole('button', { name: 'World Clock' }));
+
+    expect(screen.getByRole('dialog', { name: 'World Clock' })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /^Local/ })).toBeInTheDocument();
+    expect(screen.getByRole('row', { name: /^Austin/ })).toBeInTheDocument();
+    expect(path()).toHaveTextContent(/^\/$/);
+  });
+
   it('shows a tab for each project', async () => {
     renderAt('/');
     await userEvent.dblClick(desktop().getByRole('button', { name: 'Projects' }));
@@ -120,7 +130,7 @@ describe('App', () => {
       );
     });
     const whileDragging = dialog.style.transform;
-    expect(whileDragging).not.toBe('translate(120px, 16px)');
+    expect(whileDragging).not.toBe(`translate(${CASCADE_ORIGIN_X}px, ${CASCADE_ORIGIN_Y}px)`);
 
     act(() => {
       window.dispatchEvent(
