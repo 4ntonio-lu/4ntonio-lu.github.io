@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -89,6 +89,92 @@ describe('App', () => {
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Maximize' }));
     expect(dialog).toHaveStyle({ width: '100%', height: '100%' });
+  });
+
+  it('stops moving a window after the pointer is released outside it', () => {
+    renderAt('/');
+    const dialog = screen.getByRole('dialog', { name: 'About' });
+    const title = dialog.querySelector('.win95-title');
+    if (!title) throw new Error('Missing title bar');
+
+    act(() => {
+      title.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          clientX: 200,
+          clientY: 20,
+        }),
+      );
+      title.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 200, clientY: 20 }),
+      );
+    });
+    expect(document.body).toHaveClass('react-draggable-transparent-selection');
+
+    act(() => {
+      document.dispatchEvent(
+        new MouseEvent('mousemove', { bubbles: true, buttons: 1, clientX: 320, clientY: 120 }),
+      );
+    });
+    const whileDragging = dialog.style.transform;
+    expect(whileDragging).not.toBe('translate(120px, 16px)');
+
+    act(() => {
+      window.dispatchEvent(
+        new PointerEvent('pointerup', {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          clientX: 4,
+          clientY: 4,
+        }),
+      );
+    });
+    expect(document.body).not.toHaveClass('react-draggable-transparent-selection');
+
+    act(() => {
+      document.dispatchEvent(
+        new MouseEvent('mousemove', { bubbles: true, buttons: 0, clientX: 480, clientY: 280 }),
+      );
+    });
+    expect(dialog.style.transform).toBe(whileDragging);
+  });
+
+  it('stops moving a window when the pointer is cancelled', () => {
+    renderAt('/');
+    const dialog = screen.getByRole('dialog', { name: 'About' });
+    const title = dialog.querySelector('.win95-title');
+    if (!title) throw new Error('Missing title bar');
+
+    act(() => {
+      title.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          button: 0,
+          pointerId: 1,
+          clientX: 200,
+          clientY: 20,
+        }),
+      );
+      title.dispatchEvent(
+        new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 200, clientY: 20 }),
+      );
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new PointerEvent('pointercancel', {
+          bubbles: true,
+          pointerId: 1,
+          clientX: 260,
+          clientY: 80,
+        }),
+      );
+    });
+
+    expect(document.body).not.toHaveClass('react-draggable-transparent-selection');
   });
 
   it('closes the window from the title bar and leaves its taskbar button gone', async () => {
