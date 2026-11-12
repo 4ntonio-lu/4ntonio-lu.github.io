@@ -8,6 +8,7 @@ export const LINE_RANGES = [
   { id: '1M', label: '1M', days: 30 },
   { id: '3M', label: '3M', days: 90 },
   { id: '1Y', label: '1Y', days: 365 },
+  { id: '5Y', label: '5Y', days: 1825 },
 ] as const;
 
 export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
@@ -27,6 +28,22 @@ export type EquityRangeId = (typeof EQUITY_RANGES)[number]['id'];
 export function rangeDays(id: LineRangeId): number {
   const range = LINE_RANGES.find((item) => item.id === id);
   return range ? range.days : 365;
+}
+
+/** `days` query the chart worker forwards to CoinGecko. */
+export function lineChartQueryDays(id: LineRangeId): string {
+  return String(rangeDays(id));
+}
+
+/**
+ * A five-year label needs a series that is actually longer than one year.
+ * The free CoinGecko plan stops at 365 days, and that payload must not be drawn as 5Y.
+ */
+export function chartSeriesCovers(points: readonly { t: number }[], days: number): boolean {
+  if (points.length < 2) return false;
+  if (days < 1000) return true;
+  const span = points[points.length - 1].t - points[0].t;
+  return span >= 4 * 365 * DAY_MS;
 }
 
 export function equityRangeDays(id: EquityRangeId): number {

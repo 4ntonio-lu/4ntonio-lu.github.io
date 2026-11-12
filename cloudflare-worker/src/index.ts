@@ -21,6 +21,19 @@ const INFO_TTL_SECONDS = 30 * 60;
 const CHART_TTL_SECONDS = 12 * 60 * 60;
 const EQUITY_TTL_SECONDS = 15 * 60;
 
+/**
+ * Chart windows the worker will ask CoinGecko for.
+ * 1825 is five years. The free demo plan rejects it; the worker still forwards
+ * the value so the limit is CoinGecko's, not a hardcoded year.
+ */
+const CHART_DAYS = new Set(['365', '1825']);
+
+export function cryptoChartParams(days: string | null): { days: string; interval?: 'daily' } | null {
+	if (days == null || days.length === 0) return { days: '365', interval: 'daily' };
+	if (!CHART_DAYS.has(days)) return null;
+	return { days, interval: 'daily' };
+}
+
 const corsHeaders = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'GET, OPTIONS',
@@ -76,6 +89,9 @@ async function serveCrypto(request: Request, env: Env, id: string, type: string)
 	if (type !== 'info' && type !== 'chart') return text('Missing or invalid "type" query parameter', 400);
 	if (!env.COINGECKO_APIKEY) return text('API key is not set', 500);
 
+	const chart = type === 'chart' ? cryptoChartParams(new URL(request.url).searchParams.get('days')) : null;
+	if (type === 'chart' && !chart) return text('Invalid days', 400);
+
 	const ttl = type === 'info' ? INFO_TTL_SECONDS : CHART_TTL_SECONDS;
 	return fromCache(request, async () => {
 		const params = new URLSearchParams();
@@ -83,11 +99,11 @@ async function serveCrypto(request: Request, env: Env, id: string, type: string)
 		if (type === 'info') {
 			apiUrl = `https://api.coingecko.com/api/v3/coins/${id}`;
 			params.set('localization', 'false');
-		} else {
+		} else if (chart) {
 			apiUrl = `https://api.coingecko.com/api/v3/coins/${id}/market_chart`;
 			params.set('vs_currency', 'usd');
-			params.set('days', '365');
-			params.set('interval', 'daily');
+			params.set('days', chart.days);
+			if (chart.interval) params.set('interval', chart.interval);
 		}
 
 		let upstream: Response;

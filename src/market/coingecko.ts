@@ -32,8 +32,8 @@ export function cryptoQuoteCacheKey(id: string): string {
   return `market:crypto:quote:v4:${id}`;
 }
 
-export function cryptoHistoryCacheKey(id: string): string {
-  return `market:crypto:history:v3:${id}`;
+export function cryptoHistoryCacheKey(id: string, days?: string): string {
+  return days ? `market:crypto:history:v4:${id}:${days}` : `market:crypto:history:v3:${id}`;
 }
 
 /** Same window the previous screen used before it refetched on mount. */
@@ -157,8 +157,11 @@ export async function fetchCryptoQuotes(ids: readonly string[]): Promise<Record<
 
 export async function fetchCryptoHistory(
   ids: readonly string[],
+  days?: string,
 ): Promise<Record<string, LinePoint[]>> {
-  return settleById(ids, async (id) =>
-    parseMarketChart(await fetchWorkerJson({ id, type: 'chart' })),
-  );
+  return settleById(ids, async (id) => {
+    const params: Record<string, string> = { id, type: 'chart' };
+    if (days) params.days = days;
+    return parseMarketChart(await fetchWorkerJson(params));
+  });
 }

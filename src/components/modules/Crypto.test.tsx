@@ -59,6 +59,11 @@ describe('Crypto', () => {
     expect(screen.getByRole('complementary', { name: 'Market stats' })).toHaveTextContent('1.5t');
     expect(screen.getByRole('button', { name: '1D' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '6M' })).not.toBeInTheDocument();
+    expect(
+      [...screen.getByRole('group', { name: 'Chart range' }).querySelectorAll('button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['1D', '1W', '1M', '3M', '1Y', '5Y']);
     expect(screen.getByRole('button', { name: '1Y', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('20.00%');
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('High $120.00');
@@ -83,6 +88,50 @@ describe('Crypto', () => {
     expect(screen.getByRole('button', { name: '1W', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: 'Selected range' })).toHaveTextContent('9.09%');
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('does not draw a one-year series as five years', async () => {
+    const now = Date.now();
+    const urls: string[] = [];
+    vi.stubGlobal('fetch', (input: RequestInfo) => {
+      urls.push(String(input));
+      return Promise.resolve(
+        Response.json({
+          prices: [
+            [now - 364 * DAY, 100],
+            [now, 180],
+          ],
+        }),
+      );
+    });
+    writeCache(cryptoQuoteCacheKey('bitcoin'), {
+      id: 'bitcoin',
+      symbol: 'bitcoin',
+      name: 'Bitcoin',
+      price: 73000,
+      changePct24h: 1.5,
+      marketCap: 1,
+      asOf: now,
+    });
+    writeCache(cryptoHistoryCacheKey('bitcoin'), [
+      { t: now - 10 * DAY, price: 100 },
+      { t: now, price: 120 },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <DesktopProvider initialOpen="crypto">
+          <Crypto />
+        </DesktopProvider>
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: '5Y' }));
+
+    expect(await screen.findByText(/free chart only goes back one year/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('price-chart')).not.toBeInTheDocument();
+    expect(urls.some((url) => url.includes('days=1825'))).toBe(true);
+    expect(screen.queryByRole('group', { name: 'Selected range' })).not.toBeInTheDocument();
   });
 
   it('fetches and refreshes only the open coin', async () => {

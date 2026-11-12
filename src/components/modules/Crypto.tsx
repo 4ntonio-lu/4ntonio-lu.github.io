@@ -38,6 +38,7 @@ import {
 } from '../../market/format';
 import {
   LINE_RANGES,
+  chartSeriesCovers,
   percentChange,
   rangeDays,
   seriesBounds,
@@ -154,6 +155,8 @@ function CryptoPrices(): JSX.Element {
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState(false);
   const [chartErrorId, setChartErrorId] = useState<string | null>(null);
+  const [longHistory, setLongHistory] = useState<Record<string, LinePoint[]>>({});
+  const [longRangeError, setLongRangeError] = useState(false);
   const [range, setRange] = useState<LineRangeId>('1Y');
   const [showStats, setShowStats] = useState(true);
   const coinRef = useRef(coinId);
@@ -254,9 +257,54 @@ function CryptoPrices(): JSX.Element {
     };
   }, [coinId]);
 
+  useEffect(() => {
+    if (range !== '5Y') return;
+    let active = true;
+    const id = coinId;
+    const cached = readCache<LinePoint[]>(cryptoHistoryCacheKey(id, '1825'), CRYPTO_HISTORY_TTL_MS);
+    if (cached && chartSeriesCovers(cached, 1825)) {
+      setLongHistory((current) => ({ ...current, [id]: cached }));
+      setLongRangeError(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    setLongRangeError(false);
+    void fetchCryptoHistory([id], '1825')
+      .then((next) => {
+        const points = next[id];
+        if (!points || !chartSeriesCovers(points, 1825)) {
+          if (active) setLongRangeError(true);
+          return;
+        }
+        writeCache(cryptoHistoryCacheKey(id, '1825'), points);
+        if (!active) return;
+        setLongHistory((current) => ({ ...current, [id]: points }));
+        setLongRangeError(false);
+      })
+      .catch((error: unknown) => {
+        console.error('Error fetching CoinGecko data:', error);
+        if (active) setLongRangeError(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [coinId, range]);
+
   const days = rangeDays(range);
   const quote = quotes[coinId];
-  const points = sliceByDays(history[coinId] ?? [], days);
+  const longPoints = longHistory[coinId] ?? [];
+  const longRejected =
+    range === '5Y' &&
+    (longRangeError || (longPoints.length > 0 && !chartSeriesCovers(longPoints, days)));
+  const points =
+    range === '5Y'
+      ? longRejected
+        ? []
+        : sliceByDays(longPoints, days)
+      : sliceByDays(history[coinId] ?? [], days);
   const loading = loadingId === coinId && !quote;
   const failed = failedId === coinId && !quote;
   const chartError = chartErrorId === coinId && quote != null && points.length < 2;
@@ -306,7 +354,11 @@ function CryptoPrices(): JSX.Element {
                           <RangeButtons
                             ranges={LINE_RANGES}
                             value={range}
-                            onChange={(next) => setRange(next as LineRangeId)}
+                            onChange={(next) => {
+                              const id = next as LineRangeId;
+                              if (id === '5Y') setLongRangeError(false);
+                              setRange(id);
+                            }}
                           />
                           <RangeSummary
                             change={rangeMove}
@@ -344,9 +396,11 @@ function CryptoPrices(): JSX.Element {
                               </>
                             ) : (
                               <p className="border-2 border-b-[#ffffff] border-l-[#808080] border-r-[#ffffff] border-t-[#808080] px-3 py-8 text-center text-[#272727]">
-                                {chartError
-                                  ? "Couldn't load the chart. Prices above are still updating."
-                                  : 'Loading chart…'}
+                                {range === '5Y' && longRejected
+                                  ? "Couldn't load 5Y. The free chart only goes back one year."
+                                  : chartError
+                                    ? "Couldn't load the chart. Prices above are still updating."
+                                    : 'Loading chart…'}
                               </p>
                             )}
                           </div>
