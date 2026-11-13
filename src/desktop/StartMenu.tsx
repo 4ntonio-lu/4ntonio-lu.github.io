@@ -1,9 +1,11 @@
 import { JSX, useEffect, useRef, type KeyboardEvent } from 'react';
+import { useWeatherChromeIcon } from '../weather/selection';
 import { apps, desktopLinks } from './apps';
 import { useDesktop } from './useDesktop';
 
 function StartMenu({ onClose }: { onClose: () => void }): JSX.Element {
   const { run } = useDesktop();
+  const weatherIcon = useWeatherChromeIcon();
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ function StartMenu({ onClose }: { onClose: () => void }): JSX.Element {
             className="start-item"
             onClick={() => launch(app.id)}
           >
-            <img src={app.icon} alt="" draggable={false} />
+            <img src={app.id === 'weather' ? weatherIcon : app.icon} alt="" draggable={false} />
             <span>{app.title}</span>
           </button>
         ))}

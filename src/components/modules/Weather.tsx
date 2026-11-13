@@ -9,6 +9,13 @@ import {
   type ForecastView,
   type WeatherKind,
 } from '../../weather/forecast';
+import { locateNearestCity } from '../../weather/nearest';
+import {
+  getWeatherCity,
+  noteForecastSun,
+  setWeatherCity,
+  useWeatherCity,
+} from '../../weather/selection';
 import sunUrl from '../../weather/icons/sun.png';
 import partlyUrl from '../../weather/icons/partly.png';
 import cloudUrl from '../../weather/icons/cloud.png';
@@ -163,20 +170,39 @@ function HourPanel({
 }
 
 function Weather(): JSX.Element {
-  const [cityId, setCityId] = useState<CityId>(CITIES[0].id);
-  const [view, setView] = useState<ForecastView | null>(() => readForecast(CITIES[0].id));
+  const cityId = useWeatherCity();
+  const [view, setView] = useState<ForecastView | null>(() => readForecast(getWeatherCity()));
   const [failedId, setFailedId] = useState<CityId | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
+  const picked = useRef(false);
 
   useEffect(() => {
-    if (readForecast(cityId)) return;
+    let active = true;
+    locateNearestCity().then((next) => {
+      if (!active || !next || picked.current) return;
+      setWeatherCity(next);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
+  useEffect(() => {
+    const cached = readForecast(cityId);
+    if (cached) {
+      setView(cached);
+      noteForecastSun(cached.cityId, cached.sunrise, cached.sunset);
+      return;
+    }
+
+    setView(null);
     let active = true;
     loadForecast(cityId).then(
       (next) => {
         if (!active) return;
         setView(next);
         setFailedId(null);
+        noteForecastSun(next.cityId, next.sunrise, next.sunset);
       },
       () => {
         if (!active) return;
@@ -190,11 +216,12 @@ function Weather(): JSX.Element {
   }, [cityId]);
 
   const choose = (next: CityId) => {
-    setCityId(next);
+    picked.current = true;
     setChoice(null);
+    setFailedId(null);
     const cached = readForecast(next);
     setView(cached);
-    setFailedId(null);
+    setWeatherCity(next);
   };
 
   const failed = !view && failedId === cityId;
@@ -208,6 +235,10 @@ function Weather(): JSX.Element {
         ? 'Today'
         : (selectedDay?.label ?? 'Today');
   const hours = view ? (active === 'next' ? view.nextHours : (selectedDay?.hours ?? [])) : [];
+  const high = view ? (active === 'next' ? view.nextHighF : selectedDay?.highF) : null;
+  const low = view ? (active === 'next' ? view.nextLowF : selectedDay?.lowF) : null;
+  const sunrise = view ? (active === 'next' ? view.nextSunrise : selectedDay?.sunrise) : null;
+  const sunset = view ? (active === 'next' ? view.nextSunset : selectedDay?.sunset) : null;
 
   return (
     <WindowBox
@@ -218,30 +249,21 @@ function Weather(): JSX.Element {
           <div className="weather-top">
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
-              <fieldset className="weather-now">
-                <legend>Now</legend>
-                <div className="weather-now-line">
-                  <WeatherMark kind={view.kind} night={view.night} size={32} />
-                  <span className="weather-temp">{view.tempF} F</span>
-                  <span className="weather-condition">{view.condition}</span>
-                </div>
-                <div className="weather-now-line">
-                  <span>Feels like {view.feelsLikeF} F</span>
-                  <span>Wind {view.windMph} mph</span>
-                  <span>Humidity {view.humidity}%</span>
-                </div>
-              </fieldset>
+              <div className="weather-current">
+                <WeatherMark kind={view.kind} night={view.night} size={32} />
+                <span className="weather-temp">{view.tempF} F</span>
+                <span className="weather-condition">{view.condition}</span>
+                <span>Feels like {view.feelsLikeF} F</span>
+                <span>Wind {view.windMph} mph</span>
+                <span>Humidity {view.humidity}%</span>
+              </div>
             )}
             {view && (
               <div className="weather-corner">
-                <div className="weather-corner-row">
-                  <span>High {active === 'next' ? view.nextHighF : selectedDay?.highF} F</span>
-                  <span>Low {active === 'next' ? view.nextLowF : selectedDay?.lowF} F</span>
-                </div>
-                <div className="weather-corner-row">
-                  <span>Sunrise {active === 'next' ? view.nextSunrise : selectedDay?.sunrise}</span>
-                  <span>Sunset {active === 'next' ? view.nextSunset : selectedDay?.sunset}</span>
-                </div>
+                <span>High {high} F</span>
+                <span>Sunrise {sunrise}</span>
+                <span>Low {low} F</span>
+                <span>Sunset {sunset}</span>
               </div>
             )}
           </div>

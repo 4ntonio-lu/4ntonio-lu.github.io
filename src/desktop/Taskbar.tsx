@@ -1,12 +1,14 @@
 import { JSX, useEffect, useRef, useState } from 'react';
 import { img } from '../assets/images/img';
 import TrayClock from '../components/elements/TrayClock';
+import { useWeatherChromeIcon } from '../weather/selection';
 import { appById } from './apps';
 import { useDesktop } from './useDesktop';
 import StartMenu from './StartMenu';
 
 function Taskbar(): JSX.Element {
   const { windows, focusedId, run } = useDesktop();
+  const weatherIcon = useWeatherChromeIcon();
   const [menuOpen, setMenuOpen] = useState(false);
   const barRef = useRef<HTMLElement>(null);
 
@@ -55,7 +57,7 @@ function Taskbar(): JSX.Element {
               aria-pressed={pressed}
               onClick={() => run({ type: 'taskbar', id: window.id })}
             >
-              <img src={app.icon} alt="" />
+              <img src={app.id === 'weather' ? weatherIcon : app.icon} alt="" />
               <span>{app.title}</span>
             </button>
           );

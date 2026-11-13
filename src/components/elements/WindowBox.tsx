@@ -9,6 +9,7 @@ import {
 import Draggable from 'react-draggable';
 import { appByWindowName } from '../../desktop/apps';
 import { useDesktop } from '../../desktop/useDesktop';
+import { useWeatherChromeIcon } from '../../weather/selection';
 import WindowHeader from './WindowHeader';
 
 type WindowBoxProps = {
@@ -26,6 +27,7 @@ function WindowBox({
   fillHeight = false,
 }: WindowBoxProps): JSX.Element | null {
   const { windows, focusedId, compact, run, dispatch } = useDesktop();
+  const weatherIcon = useWeatherChromeIcon();
   const nodeRef = useRef<HTMLDivElement>(null);
   const activePointer = useRef<number | null>(null);
   const stopDrag = useRef<((event: PointerEvent) => void) | null>(null);
@@ -147,7 +149,7 @@ function WindowBox({
         <WindowHeader
           title={name}
           titleId={titleId}
-          icon={app.icon}
+          icon={app.id === 'weather' ? weatherIcon : app.icon}
           active={active}
           maximized={windowState.maximized}
           onMinimize={() => run({ type: 'minimize', id: app.id })}

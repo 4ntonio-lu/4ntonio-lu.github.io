@@ -1,4 +1,5 @@
 import { useRef, type JSX, type MouseEvent, type PointerEvent } from 'react';
+import { useWeatherChromeIcon } from '../weather/selection';
 import { apps, desktopLinks, type DesktopLink } from './apps';
 import { useDesktop } from './useDesktop';
 
@@ -72,6 +73,7 @@ function DesktopLinkIcon({
 
 function DesktopIcons(): JSX.Element {
   const { selectedId, run } = useDesktop();
+  const weatherIcon = useWeatherChromeIcon();
 
   return (
     <nav className="desktop-icons" aria-label="Desktop">
@@ -80,7 +82,7 @@ function DesktopIcons(): JSX.Element {
           key={app.id}
           id={app.id}
           title={app.title}
-          icon={app.icon}
+          icon={app.id === 'weather' ? weatherIcon : app.icon}
           selected={selectedId === app.id}
           onOpen={() => run({ type: 'open', id: app.id })}
         />

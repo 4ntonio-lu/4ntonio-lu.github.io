@@ -590,9 +590,26 @@ button:focus-visible,
 
 .weather-top {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'city corner'
+    'current current';
   align-items: center;
-  column-gap: 12px;
+  column-gap: 16px;
+  row-gap: 8px;
+}
+
+.weather-top .weather-combo {
+  grid-area: city;
+  justify-self: start;
+}
+
+.weather-top .weather-current {
+  grid-area: current;
+}
+
+.weather-top .weather-corner {
+  grid-area: corner;
 }
 
 .weather-combo {
@@ -674,35 +691,9 @@ button:focus-visible,
   color: #fff;
 }
 
-.weather-now {
+.weather-current {
   display: flex;
-  box-sizing: border-box;
-  width: 100%;
   min-width: 0;
-  min-inline-size: 0 !important;
-  max-width: 100%;
-  flex-direction: column;
-  justify-self: stretch;
-  gap: 4px;
-  margin: 0;
-  padding: 6px 10px 6px;
-  background: var(--win-face);
-  border: 2px solid;
-  border-color: var(--win-light) var(--win-dark) var(--win-dark) var(--win-light);
-  border-radius: 0;
-  box-shadow:
-    inset -1px -1px 0 var(--win-shadow),
-    inset 1px 1px 0 var(--win-mid);
-}
-
-.weather-now legend {
-  margin-left: 6px;
-  padding: 0 4px;
-  background: var(--win-face);
-}
-
-.weather-now-line {
-  display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 14px;
@@ -717,27 +708,22 @@ button:focus-visible,
 .weather-condition,
 .weather-temp,
 .weather-hour,
-.weather-now-line span,
+.weather-current span,
 .weather-corner span {
   white-space: nowrap;
 }
 
 .weather-corner {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  display: grid;
+  grid-template-columns: auto auto;
   justify-self: end;
-  gap: 2px;
-}
-
-.weather-corner-row {
-  display: flex;
-  justify-content: flex-end;
-  gap: 4px 12px;
+  align-content: center;
+  column-gap: 16px;
+  row-gap: 2px;
 }
 
 .weather-columns {
-  margin-top: 10px;
+  margin-top: 18px;
   display: grid;
   grid-template-columns: minmax(0, 1.57fr) minmax(0, 1fr);
   gap: 12px;

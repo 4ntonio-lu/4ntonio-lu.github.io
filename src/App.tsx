@@ -5,6 +5,7 @@ import DesktopIcons from './desktop/DesktopIcons';
 import { DesktopProvider } from './desktop/DesktopProvider';
 import { useDesktop } from './desktop/useDesktop';
 import Taskbar from './desktop/Taskbar';
+import { WeatherChromeSync } from './weather/selection';
 
 function Desktop(): JSX.Element {
   const { windows, dispatch } = useDesktop();
@@ -12,6 +13,7 @@ function Desktop(): JSX.Element {
 
   return (
     <>
+      <WeatherChromeSync />
       <div
         className="desktop"
         onMouseDown={(event) => {
