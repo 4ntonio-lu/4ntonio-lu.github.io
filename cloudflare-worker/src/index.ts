@@ -36,21 +36,44 @@ export function cryptoChartParams(days: string | null): { days: string; interval
 	return { days, interval: 'daily' };
 }
 
-const corsHeaders = {
-	'Access-Control-Allow-Origin': '*',
-	'Access-Control-Allow-Methods': 'GET, OPTIONS',
-	'Access-Control-Allow-Headers': 'Content-Type',
-};
+/** Portfolio and Vite dev. A missing or any other Origin is rejected. */
+const ALLOWED_ORIGINS = new Set([
+	'https://4ntonio-lu.github.io',
+	'http://localhost:5173',
+	'http://127.0.0.1:5173',
+]);
+
+function allowedOrigin(request: Request): string | null {
+	const origin = request.headers.get('Origin');
+	if (origin !== null && ALLOWED_ORIGINS.has(origin)) return origin;
+	return null;
+}
+
+function applyCors(headers: Headers, origin: string): void {
+	headers.set('Access-Control-Allow-Origin', origin);
+	headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+	headers.set('Access-Control-Allow-Headers', 'Content-Type');
+	headers.set('Vary', 'Origin');
+}
+
+function withCors(response: Response, origin: string): Response {
+	const headers = new Headers(response.headers);
+	applyCors(headers, origin);
+	return new Response(response.body, {
+		status: response.status,
+		statusText: response.statusText,
+		headers,
+	});
+}
 
 function text(message: string, status: number): Response {
-	return new Response(message, { status, headers: corsHeaders });
+	return new Response(message, { status });
 }
 
 function json(body: string, status: number, ttlSeconds: number): Response {
 	return new Response(body, {
 		status,
 		headers: {
-			...corsHeaders,
 			'Content-Type': 'application/json',
 			'Cache-Control': `public, max-age=${ttlSeconds}`,
 		},
@@ -124,19 +147,26 @@ async function serveCrypto(request: Request, env: Env, id: string, type: string)
 
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
-		if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
-		if (request.method !== 'GET') return text('Method not allowed', 405);
+		const origin = allowedOrigin(request);
+		if (!origin) return new Response('Forbidden', { status: 403 });
+
+		if (request.method === 'OPTIONS') {
+			const headers = new Headers();
+			applyCors(headers, origin);
+			return new Response(null, { status: 204, headers });
+		}
+		if (request.method !== 'GET') return withCors(text('Method not allowed', 405), origin);
 
 		const url = new URL(request.url);
 		const type = url.searchParams.get('type');
 		if (type === 'equity') {
 			const symbol = url.searchParams.get('symbol') ?? '';
-			return serveEquity(request, symbol);
+			return withCors(await serveEquity(request, symbol), origin);
 		}
 
 		const id = url.searchParams.get('id') ?? '';
-		if (!id) return text('Missing "id" query parameter', 400);
-		if (!type) return text('Missing or invalid "type" query parameter (info or chart)', 400);
-		return serveCrypto(request, env, id, type);
+		if (!id) return withCors(text('Missing "id" query parameter', 400), origin);
+		if (!type) return withCors(text('Missing or invalid "type" query parameter (info or chart)', 400), origin);
+		return withCors(await serveCrypto(request, env, id, type), origin);
 	},
 };
