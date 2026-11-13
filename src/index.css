@@ -688,8 +688,16 @@ button:focus-visible,
 .weather-condition,
 .weather-temp,
 .weather-hour,
-.weather-stats span {
+.weather-stats span,
+.weather-corner span {
   white-space: nowrap;
+}
+
+.weather-corner {
+  display: flex;
+  margin-left: auto;
+  flex-wrap: wrap;
+  gap: 4px 18px;
 }
 
 .weather-stats {
@@ -733,9 +741,10 @@ button:focus-visible,
   flex: 1;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   align-content: center;
-  gap: 12px 2px;
+  row-gap: 36px;
+  column-gap: 4px;
   margin: 0;
-  padding: 10px 6px 8px;
+  padding: 16px 6px;
   list-style: none;
 }
 
@@ -767,6 +776,11 @@ button:focus-visible,
   text-align: left;
 }
 
+.weather-day.is-next {
+  grid-template-columns: 1fr;
+  white-space: nowrap;
+}
+
 .weather-day.is-selected {
   background: var(--win-navy);
   color: #fff;
@@ -779,16 +793,6 @@ button:focus-visible,
 .weather-day-mark {
   display: flex;
   justify-content: flex-end;
-}
-
-.weather-credit {
-  margin: 10px 2px 2px;
-}
-
-.weather-credit a {
-  color: #000;
-  font-size: 0.85rem;
-  text-decoration: none;
 }
 
 .weather-message {

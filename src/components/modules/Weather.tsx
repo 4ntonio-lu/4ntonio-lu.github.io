@@ -127,15 +127,27 @@ function CityControl({
   );
 }
 
-function HourPanel({ view, dayIndex }: { view: ForecastView; dayIndex: number }): JSX.Element {
-  const day = view.days[dayIndex] ?? view.days[0];
-  const heading = dayIndex === 0 ? 'Today' : day.label;
+type Choice = 'next' | number;
+
+function resolvedChoice(view: ForecastView, choice: Choice | null): Choice {
+  if (choice === 'next') return 'next';
+  if (typeof choice === 'number' && view.days[choice]) return choice;
+  return view.pastNoon ? 'next' : 0;
+}
+
+function HourPanel({
+  heading,
+  hours,
+}: {
+  heading: string;
+  hours: ForecastView['nextHours'];
+}): JSX.Element {
   return (
     <section className="weather-panel" aria-label={heading}>
       <h2>{heading}</h2>
       <ul className="weather-hours">
-        {day.hours.map((hour) => (
-          <li key={`${day.date}-${hour.label}`} className="weather-hour">
+        {hours.map((hour, index) => (
+          <li key={`${hour.label}-${index}`} className="weather-hour">
             <span>{hour.label}</span>
             <WeatherMark kind={hour.kind} night={hour.night} size={22} />
             <span>{hour.tempF}</span>
@@ -150,7 +162,7 @@ function Weather(): JSX.Element {
   const [cityId, setCityId] = useState<CityId>(CITIES[0].id);
   const [view, setView] = useState<ForecastView | null>(() => readForecast(CITIES[0].id));
   const [failedId, setFailedId] = useState<CityId | null>(null);
-  const [dayIndex, setDayIndex] = useState(0);
+  const [choice, setChoice] = useState<Choice | null>(null);
 
   useEffect(() => {
     if (readForecast(cityId)) return;
@@ -175,13 +187,23 @@ function Weather(): JSX.Element {
 
   const choose = (next: CityId) => {
     setCityId(next);
-    setDayIndex(0);
+    setChoice(null);
     const cached = readForecast(next);
     setView(cached);
     setFailedId(null);
   };
 
   const failed = !view && failedId === cityId;
+  const active = view ? resolvedChoice(view, choice) : 'next';
+  const selectedDay = view && typeof active === 'number' ? view.days[active] : null;
+  const heading = !view
+    ? 'Today'
+    : active === 'next'
+      ? 'Next 12 hours'
+      : selectedDay && selectedDay.date === view.today
+        ? 'Today'
+        : (selectedDay?.label ?? 'Today');
+  const hours = view ? (active === 'next' ? view.nextHours : (selectedDay?.hours ?? [])) : [];
 
   return (
     <WindowBox
@@ -198,30 +220,58 @@ function Weather(): JSX.Element {
                 <span className="weather-condition">{view.condition}</span>
               </div>
             )}
+            {view && (
+              <div className="weather-corner">
+                {active === 'next' && view.sunrise && view.sunset ? (
+                  <>
+                    <span>Sunrise {view.sunrise}</span>
+                    <span>Sunset {view.sunset}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>High {selectedDay?.highF ?? view.highF} F</span>
+                    <span>Low {selectedDay?.lowF ?? view.lowF} F</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {view ? (
             <>
               <div className="weather-stats">
-                <span>High {view.highF} F</span>
-                <span>Low {view.lowF} F</span>
+                <span>Feels like {view.feelsLikeF} F</span>
                 <span>Wind {view.windMph} mph</span>
                 <span>Humidity {view.humidity}%</span>
               </div>
               <div className="weather-columns">
-                <HourPanel view={view} dayIndex={dayIndex} />
+                <HourPanel heading={heading} hours={hours} />
                 <section className="weather-panel" aria-label="Week">
                   <h2>Week</h2>
                   <ul className="weather-days">
+                    <li>
+                      <button
+                        type="button"
+                        className={
+                          active === 'next'
+                            ? 'weather-day is-next is-selected'
+                            : 'weather-day is-next'
+                        }
+                        aria-pressed={active === 'next'}
+                        onClick={() => setChoice('next')}
+                      >
+                        Next 12 hours
+                      </button>
+                    </li>
                     {view.days.map((day, index) => {
-                      const selected = index === dayIndex;
+                      const selected = active === index;
                       return (
                         <li key={day.date}>
                           <button
                             type="button"
                             className={selected ? 'weather-day is-selected' : 'weather-day'}
                             aria-pressed={selected}
-                            onClick={() => setDayIndex(index)}
+                            onClick={() => setChoice(index)}
                           >
                             <span>{day.label}</span>
                             <span className="weather-day-temps">
@@ -244,11 +294,17 @@ function Weather(): JSX.Element {
             </p>
           )}
 
-          <p className="weather-credit">
-            <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">
-              Powered by Open-Meteo
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-[#272727]">
+            <span className="text-[0.8rem] font-semibold">Powered by</span>
+            <a
+              href="https://open-meteo.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[0.8rem] font-semibold underline"
+            >
+              Open-Meteo
             </a>
-          </p>
+          </div>
         </div>
       }
     />

@@ -3,11 +3,9 @@ import {
   CITIES,
   clearForecastSession,
   forecastUrl,
-  laterDayHourWindow,
   loadForecast,
   parseForecast,
   readForecast,
-  todayHourWindow,
   type City,
 } from './forecast';
 
@@ -27,16 +25,17 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
     21: { temp: 70.4, code: 2 },
   };
   const friday: Record<number, { temp: number; code: number }> = {
+    0: { temp: 48.2, code: 0 },
     8: { temp: 58.2, code: 0 },
     19: { temp: 64.4, code: 0 },
   };
   const time: string[] = [];
   const temperature_2m: number[] = [];
   const weather_code: number[] = [];
-  for (let day = 12; day <= 18; day += 1) {
+  for (let day = 12; day <= 19; day += 1) {
     for (let hour = 0; hour < 24; hour += 1) {
       const special = day === 12 ? thursday[hour] : day === 13 ? friday[hour] : undefined;
-      time.push(`2026-11-${day}T${String(hour).padStart(2, '0')}:00`);
+      time.push(`2026-11-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00`);
       temperature_2m.push(special?.temp ?? 50);
       weather_code.push(special?.code ?? 3);
     }
@@ -46,6 +45,7 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
     current: {
       time: currentTime,
       temperature_2m: 74.4,
+      apparent_temperature: 71.6,
       relative_humidity_2m: 48.2,
       weather_code: 2,
       wind_speed_10m: 8.4,
@@ -60,10 +60,11 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
         '2026-11-16',
         '2026-11-17',
         '2026-11-18',
+        '2026-11-19',
       ],
-      weather_code: [0, 2, 0, 3, 61, 73, 95],
-      temperature_2m_max: [81.2, 79.4, 84.1, 77.2, 73.4, 70.1, 68.2],
-      temperature_2m_min: [63.4, 61.2, 66.2, 60.4, 58.1, 55.2, 52.4],
+      weather_code: [0, 2, 0, 3, 61, 73, 95, 2],
+      temperature_2m_max: [81.2, 79.4, 84.1, 77.2, 73.4, 70.1, 68.2, 66.4],
+      temperature_2m_min: [63.4, 61.2, 66.2, 60.4, 58.1, 55.2, 52.4, 50.2],
       sunrise: [
         '2026-11-12T06:54',
         '2026-11-13T06:55',
@@ -72,6 +73,7 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
         '2026-11-16T06:57',
         '2026-11-17T06:58',
         '2026-11-18T06:59',
+        '2026-11-19T07:00',
       ],
       sunset: [
         '2026-11-12T17:35',
@@ -81,10 +83,26 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
         '2026-11-16T17:33',
         '2026-11-17T17:33',
         '2026-11-18T17:33',
+        '2026-11-19T17:32',
       ],
     },
   };
 }
+
+const EVEN_LABELS = [
+  '12 AM',
+  '2 AM',
+  '4 AM',
+  '6 AM',
+  '8 AM',
+  '10 AM',
+  '12 PM',
+  '2 PM',
+  '4 PM',
+  '6 PM',
+  '8 PM',
+  '10 PM',
+];
 
 describe('cities', () => {
   it('lists the forecast cities in menu order, with each real time zone', () => {
@@ -118,22 +136,13 @@ describe('cities', () => {
     expect(austin).toContain('temperature_unit=fahrenheit');
     expect(austin).toContain('wind_speed_unit=mph');
     expect(austin).toContain('timezone=America%2FChicago');
-    expect(austin).toContain('forecast_days=7');
+    expect(austin).toContain('forecast_days=8');
+    expect(austin).toContain('apparent_temperature');
     expect(austin).toContain('sunrise');
     expect(austin).toContain('sunset');
     expect(austin).not.toMatch(/api[_-]?key|apikey|(?:^|[?&])key=/i);
     expect(forecastUrl(city('honolulu'))).toContain('timezone=Pacific%2FHonolulu');
     expect(forecastUrl(city('honolulu'))).toContain('latitude=21.3069');
-  });
-});
-
-describe('hour windows', () => {
-  it('starts at the current hour and falls back to the last twelve', () => {
-    expect(todayHourWindow(8)).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
-    expect(todayHourWindow(12)).toEqual([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
-    expect(todayHourWindow(13)).toEqual([12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
-    expect(todayHourWindow(0)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-    expect(laterDayHourWindow()).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
   });
 });
 
@@ -144,6 +153,7 @@ describe('parseForecast', () => {
     expect(view).toMatchObject({
       cityId: 'austin',
       tempF: 74,
+      feelsLikeF: 72,
       condition: 'Partly cloudy',
       kind: 'partly',
       night: false,
@@ -151,51 +161,12 @@ describe('parseForecast', () => {
       lowF: 63,
       windMph: 8,
       humidity: 48,
+      today: '2026-11-12',
+      pastNoon: true,
+      sunrise: '6:54 AM',
+      sunset: '5:35 PM',
     });
-    expect(view.days[0].hours).toEqual([
-      { label: '12 PM', tempF: 76, kind: 'clear', night: false },
-      { label: '1 PM', tempF: 50, kind: 'cloudy', night: false },
-      { label: '2 PM', tempF: 50, kind: 'cloudy', night: false },
-      { label: '3 PM', tempF: 81, kind: 'clear', night: false },
-      { label: '4 PM', tempF: 50, kind: 'cloudy', night: false },
-      { label: '5 PM', tempF: 50, kind: 'cloudy', night: false },
-      { label: '6 PM', tempF: 77, kind: 'partly', night: true },
-      { label: '7 PM', tempF: 50, kind: 'cloudy', night: true },
-      { label: '8 PM', tempF: 50, kind: 'cloudy', night: true },
-      { label: '9 PM', tempF: 70, kind: 'partly', night: true },
-      { label: '10 PM', tempF: 50, kind: 'cloudy', night: true },
-      { label: '11 PM', tempF: 50, kind: 'cloudy', night: true },
-    ]);
-    expect(
-      view.days.map(({ date, label, highF, lowF, kind }) => ({ date, label, highF, lowF, kind })),
-    ).toEqual([
-      { date: '2026-11-12', label: 'Thu', highF: 81, lowF: 63, kind: 'clear' },
-      { date: '2026-11-13', label: 'Fri', highF: 79, lowF: 61, kind: 'partly' },
-      { date: '2026-11-14', label: 'Sat', highF: 84, lowF: 66, kind: 'clear' },
-      { date: '2026-11-15', label: 'Sun', highF: 77, lowF: 60, kind: 'cloudy' },
-      { date: '2026-11-16', label: 'Mon', highF: 73, lowF: 58, kind: 'rain' },
-      { date: '2026-11-17', label: 'Tue', highF: 70, lowF: 55, kind: 'snow' },
-      { date: '2026-11-18', label: 'Wed', highF: 68, lowF: 52, kind: 'storm' },
-    ]);
-    expect(view.days[1].hours[0]).toEqual({
-      label: '8 AM',
-      tempF: 58,
-      kind: 'clear',
-      night: false,
-    });
-    expect(view.days[1].hours[11]).toEqual({
-      label: '7 PM',
-      tempF: 64,
-      kind: 'clear',
-      night: true,
-    });
-    expect(view.days[1].hours).toHaveLength(12);
-  });
-
-  it('uses the last twelve hours after sunset and marks the current hour as night', () => {
-    const view = parseForecast(city('austin'), samplePayload('2026-11-12T20:10'));
-    expect(view.night).toBe(true);
-    expect(view.days[0].hours.map((hour) => hour.label)).toEqual([
+    expect(view.nextHours.map((hour) => hour.label)).toEqual([
       '12 PM',
       '1 PM',
       '2 PM',
@@ -209,14 +180,82 @@ describe('parseForecast', () => {
       '10 PM',
       '11 PM',
     ]);
+    expect(view.nextHours[0]).toEqual({ label: '12 PM', tempF: 76, kind: 'clear', night: false });
+    expect(view.nextHours[6]).toEqual({ label: '6 PM', tempF: 77, kind: 'partly', night: true });
+    expect(view.days.map(({ date, label }) => ({ date, label }))).toEqual([
+      { date: '2026-11-13', label: 'Fri' },
+      { date: '2026-11-14', label: 'Sat' },
+      { date: '2026-11-15', label: 'Sun' },
+      { date: '2026-11-16', label: 'Mon' },
+      { date: '2026-11-17', label: 'Tue' },
+      { date: '2026-11-18', label: 'Wed' },
+      { date: '2026-11-19', label: 'Thu' },
+    ]);
+    expect(view.days[0].hours.map((hour) => hour.label)).toEqual(EVEN_LABELS);
+    expect(view.days[0].hours[0]).toEqual({
+      label: '12 AM',
+      tempF: 48,
+      kind: 'clear',
+      night: true,
+    });
+    expect(view.days[0].hours[3]).toMatchObject({ label: '6 AM', night: true });
+    expect(view.days[0].hours[4]).toEqual({
+      label: '8 AM',
+      tempF: 58,
+      kind: 'clear',
+      night: false,
+    });
+    expect(view.days[0].hours[9]).toMatchObject({ label: '6 PM', night: true });
   });
 
-  it('keeps a morning hour before sunrise as night', () => {
-    const view = parseForecast(city('austin'), samplePayload('2026-11-12T02:10'));
+  it('keeps today on the list before noon', () => {
+    const view = parseForecast(city('austin'), samplePayload('2026-11-12T10:15'));
+    expect(view.pastNoon).toBe(false);
+    expect(view.days.map((day) => day.date)).toEqual([
+      '2026-11-12',
+      '2026-11-13',
+      '2026-11-14',
+      '2026-11-15',
+      '2026-11-16',
+      '2026-11-17',
+      '2026-11-18',
+    ]);
+    expect(view.days[0].hours.map((hour) => hour.label)).toEqual(EVEN_LABELS);
+    expect(view.nextHours[0]).toMatchObject({ label: '10 AM', night: false });
+    expect(view.nextHours[11]).toMatchObject({ label: '9 PM', night: true });
+    expect(view.nextHours).toHaveLength(12);
+  });
+
+  it('treats exactly noon as still morning', () => {
+    const view = parseForecast(city('austin'), samplePayload('2026-11-12T12:00'));
+    expect(view.pastNoon).toBe(false);
+    expect(view.days[0].date).toBe('2026-11-12');
+  });
+
+  it('continues the next twelve hours into the following day', () => {
+    const view = parseForecast(city('austin'), samplePayload('2026-11-12T21:10'));
+    expect(view.pastNoon).toBe(true);
     expect(view.night).toBe(true);
-    expect(view.days[0].hours[0]).toMatchObject({ label: '2 AM', night: true });
-    expect(view.days[0].hours[5]).toMatchObject({ label: '7 AM', night: false });
-    expect(view.days[0].hours).toHaveLength(12);
+    expect(view.nextHours.map((hour) => hour.label)).toEqual([
+      '9 PM',
+      '10 PM',
+      '11 PM',
+      '12 AM',
+      '1 AM',
+      '2 AM',
+      '3 AM',
+      '4 AM',
+      '5 AM',
+      '6 AM',
+      '7 AM',
+      '8 AM',
+    ]);
+    expect(view.nextHours[0]).toEqual({ label: '9 PM', tempF: 70, kind: 'partly', night: true });
+    expect(view.nextHours[3]).toEqual({ label: '12 AM', tempF: 48, kind: 'clear', night: true });
+    expect(view.nextHours[9]).toMatchObject({ label: '6 AM', night: true });
+    expect(view.nextHours[10]).toMatchObject({ label: '7 AM', night: false });
+    expect(view.nextHours[11]).toEqual({ label: '8 AM', tempF: 58, kind: 'clear', night: false });
+    expect(view.days[0].date).toBe('2026-11-13');
   });
 
   it('rejects a payload that cannot fill the window', () => {
