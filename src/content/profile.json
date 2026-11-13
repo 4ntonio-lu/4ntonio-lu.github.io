@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/profile.schema.json",
   "about": {
-    "heading": "Hello! I'm Antonio Lu — welcome to my portfolio website!",
+    "heading": "Hello! I'm Antonio Lu. Welcome to my portfolio website!",
     "paragraphs": [
       "This website was built with TypeScript, React, and Tailwind CSS, and is inspired by the nostalgic look and feel of Windows 95.",
       "I'm a software engineer with a passion for building efficient, user-friendly applications and solving real-world problems with clean, maintainable code.",
