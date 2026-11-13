@@ -48,6 +48,7 @@ import {
 import type { LineRangeId } from '../../market/series';
 import { cryptoStatRows } from '../../market/stats';
 import type { LinePoint, Quote } from '../../market/types';
+import ChartFrame from '../market/ChartFrame';
 import RangeButtons from '../market/RangeButtons';
 import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
@@ -350,7 +351,7 @@ function CryptoPrices(): JSX.Element {
                           </button>
                         </div>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                          <div className="min-w-0 flex-1">
+                          <ChartFrame>
                             {series.length >= 2 && open ? (
                               <>
                                 <p className="sr-only">
@@ -376,7 +377,7 @@ function CryptoPrices(): JSX.Element {
                                   : 'Loading chart…'}
                               </p>
                             )}
-                          </div>
+                          </ChartFrame>
                           {showStats && open && <StatsPanel rows={cryptoStatRows(open)} />}
                         </div>
                         <RefreshStatus

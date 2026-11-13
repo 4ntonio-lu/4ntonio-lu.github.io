@@ -43,6 +43,7 @@ import {
 } from '../../market/series';
 import { equityStatRows } from '../../market/stats';
 import type { Candle } from '../../market/types';
+import ChartFrame from '../market/ChartFrame';
 import RangeButtons from '../market/RangeButtons';
 import RangeSummary from '../market/RangeSummary';
 import RefreshStatus from '../market/RefreshStatus';
@@ -428,7 +429,7 @@ function Stocks(): JSX.Element {
                         </button>
                       </div>
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
-                        <div className="min-w-0 flex-1">
+                        <ChartFrame>
                           {candles.length >= 1 && snapshot ? (
                             <>
                               <p className="sr-only">
@@ -464,7 +465,7 @@ function Stocks(): JSX.Element {
                                 : 'Loading chart…'}
                             </p>
                           )}
-                        </div>
+                        </ChartFrame>
                         {showStats && snapshot && <StatsPanel rows={equityStatRows(snapshot)} />}
                       </div>
                       <RefreshStatus
