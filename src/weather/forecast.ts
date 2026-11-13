@@ -91,6 +91,11 @@ export type DayForecast = {
   hours: HourForecast[];
 };
 
+export type SunEvent = {
+  name: 'Sunrise' | 'Sunset';
+  time: string;
+};
+
 export type ForecastView = {
   cityId: CityId;
   tempF: number;
@@ -114,13 +119,11 @@ export type ForecastView = {
   /** Lowest of the next twelve hours. */
   nextLowF: number;
   /**
-   * Sunrise for the next twelve hours. Tomorrow's sunrise when those hours cross midnight.
+   * The next two sunrise or sunset events after now, in city-local chronological order.
+   * At 3 PM that is today's sunset, then tomorrow's sunrise. After sunset it is
+   * tomorrow's sunrise, then tomorrow's sunset.
    */
-  nextSunrise: string | null;
-  /**
-   * Sunset for the next twelve hours. Today's sunset when those hours cross midnight.
-   */
-  nextSunset: string | null;
+  nextSun: SunEvent[];
   /** Today's sunrise, city local, such as "6:54 AM". */
   sunrise: string | null;
   /** Today's sunset, city local, such as "5:35 PM". */
@@ -240,6 +243,32 @@ function clockLabel(stamp: string | null): string | null {
   const suffix = hour < 12 ? 'AM' : 'PM';
   const clock = hour % 12 || 12;
   return `${clock}:${match[2]} ${suffix}`;
+}
+
+/** The next two sun events after the current minute. The event at this exact minute has passed. */
+function upcomingSun(
+  nowStamp: string,
+  todaySunrise: string | null,
+  todaySunset: string | null,
+  tomorrowSunrise: string | null,
+  tomorrowSunset: string | null,
+): SunEvent[] {
+  const now = minutesOf(nowStamp);
+  const candidates = [
+    { name: 'Sunrise' as const, stamp: todaySunrise, day: 0 },
+    { name: 'Sunset' as const, stamp: todaySunset, day: 0 },
+    { name: 'Sunrise' as const, stamp: tomorrowSunrise, day: 1 },
+    { name: 'Sunset' as const, stamp: tomorrowSunset, day: 1 },
+  ];
+  const events = candidates.flatMap((candidate) => {
+    if (!candidate.stamp) return [];
+    const minutes = minutesOf(candidate.stamp);
+    const time = clockLabel(candidate.stamp);
+    if (minutes == null || !time) return [];
+    return [{ name: candidate.name, time, at: candidate.day * 24 * 60 + minutes }];
+  });
+  const upcoming = now == null ? events : events.filter((event) => event.at > now);
+  return upcoming.slice(0, 2).map(({ name, time }) => ({ name, time }));
 }
 
 /** After 12:00 local. Exactly noon still leaves today on the list. */
@@ -392,7 +421,6 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
   const days = pastNoon ? built.slice(1, 1 + VISIBLE_DAYS) : built.slice(0, VISIBLE_DAYS);
   const startHour = currentHour ?? 0;
   const nextHours: HourForecast[] = [];
-  let crossesMidnight = false;
   for (let step = 0; step < PANEL_HOURS; step += 1) {
     const absolute = startHour + step;
     const offset = Math.floor(absolute / 24);
@@ -401,7 +429,6 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     if (!date) break;
     const slot = slots.get(date)?.get(hour);
     if (!slot) break;
-    if (offset > 0) crossesMidnight = true;
     const sunrise = sunrises ? asString(sunrises[offset]) : null;
     const sunset = sunsets ? asString(sunsets[offset]) : null;
     nextHours.push({
@@ -444,8 +471,13 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     nextHours,
     nextHighF: Math.max(...nextHours.map((hour) => hour.tempF)),
     nextLowF: Math.min(...nextHours.map((hour) => hour.tempF)),
-    nextSunrise: clockLabel(crossesMidnight ? (sunrises ? asString(sunrises[1]) : null) : sunrise),
-    nextSunset: clockLabel(sunset),
+    nextSun: upcomingSun(
+      nowStamp,
+      sunrise,
+      sunset,
+      sunrises ? asString(sunrises[1]) : null,
+      sunsets ? asString(sunsets[1]) : null,
+    ),
     sunrise: clockLabel(sunrise),
     sunset: clockLabel(sunset),
     days,

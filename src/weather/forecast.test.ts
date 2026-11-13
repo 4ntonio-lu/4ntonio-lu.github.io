@@ -167,8 +167,10 @@ describe('parseForecast', () => {
       sunset: '5:35 PM',
       nextHighF: 81,
       nextLowF: 50,
-      nextSunrise: '6:54 AM',
-      nextSunset: '5:35 PM',
+      nextSun: [
+        { name: 'Sunset', time: '5:35 PM' },
+        { name: 'Sunrise', time: '6:55 AM' },
+      ],
     });
     expect(view.nextHours.map((hour) => hour.label)).toEqual([
       '12 PM',
@@ -232,8 +234,10 @@ describe('parseForecast', () => {
     ]);
     expect(view.days[0].hours.map((hour) => hour.label)).toEqual(EVEN_LABELS);
     expect(view.days[0]).toMatchObject({ sunrise: '6:54 AM', sunset: '5:35 PM' });
-    expect(view.nextSunrise).toBe('6:54 AM');
-    expect(view.nextSunset).toBe('5:35 PM');
+    expect(view.nextSun).toEqual([
+      { name: 'Sunset', time: '5:35 PM' },
+      { name: 'Sunrise', time: '6:55 AM' },
+    ]);
     expect(view.nextHours[0]).toMatchObject({ label: '10 AM', night: false });
     expect(view.nextHours[11]).toMatchObject({ label: '9 PM', night: true });
     expect(view.nextHours).toHaveLength(12);
@@ -270,9 +274,37 @@ describe('parseForecast', () => {
     expect(view.nextHours[11]).toEqual({ label: '8 AM', tempF: 58, kind: 'clear', night: false });
     expect(view.nextHighF).toBe(70);
     expect(view.nextLowF).toBe(48);
-    expect(view.nextSunrise).toBe('6:55 AM');
-    expect(view.nextSunset).toBe('5:35 PM');
+    expect(view.nextSun).toEqual([
+      { name: 'Sunrise', time: '6:55 AM' },
+      { name: 'Sunset', time: '5:35 PM' },
+    ]);
     expect(view.days[0].date).toBe('2026-11-13');
+  });
+
+  it('orders the next two sun events from the city clock', () => {
+    const beforeSunrise = parseForecast(city('austin'), samplePayload('2026-11-12T05:10'));
+    expect(beforeSunrise.nextSun).toEqual([
+      { name: 'Sunrise', time: '6:54 AM' },
+      { name: 'Sunset', time: '5:35 PM' },
+    ]);
+
+    const afternoon = parseForecast(city('austin'), samplePayload('2026-11-12T15:00'));
+    expect(afternoon.nextSun).toEqual([
+      { name: 'Sunset', time: '5:35 PM' },
+      { name: 'Sunrise', time: '6:55 AM' },
+    ]);
+
+    const atSunset = parseForecast(city('austin'), samplePayload('2026-11-12T17:35'));
+    expect(atSunset.nextSun).toEqual([
+      { name: 'Sunrise', time: '6:55 AM' },
+      { name: 'Sunset', time: '5:35 PM' },
+    ]);
+
+    const atSunrise = parseForecast(city('austin'), samplePayload('2026-11-12T06:54'));
+    expect(atSunrise.nextSun).toEqual([
+      { name: 'Sunset', time: '5:35 PM' },
+      { name: 'Sunrise', time: '6:55 AM' },
+    ]);
   });
 
   it('rejects a payload that cannot fill the window', () => {

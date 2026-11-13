@@ -256,8 +256,14 @@ function Weather(): JSX.Element {
   const hours = view ? (active === 'next' ? view.nextHours : (selectedDay?.hours ?? [])) : [];
   const high = view ? (active === 'next' ? view.nextHighF : selectedDay?.highF) : null;
   const low = view ? (active === 'next' ? view.nextLowF : selectedDay?.lowF) : null;
-  const sunrise = view ? (active === 'next' ? view.nextSunrise : selectedDay?.sunrise) : null;
-  const sunset = view ? (active === 'next' ? view.nextSunset : selectedDay?.sunset) : null;
+  const sunEvents = !view
+    ? []
+    : active === 'next'
+      ? view.nextSun
+      : [
+          { name: 'Sunrise' as const, time: selectedDay?.sunrise ?? '' },
+          { name: 'Sunset' as const, time: selectedDay?.sunset ?? '' },
+        ];
 
   return (
     <WindowBox
@@ -335,8 +341,11 @@ function Weather(): JSX.Element {
               </div>
               <div className="weather-sun">
                 <div className="weather-sun-pair">
-                  <span>Sunrise {sunrise}</span>
-                  <span>Sunset {sunset}</span>
+                  {sunEvents.map((event) => (
+                    <span key={event.name}>
+                      {event.name} {event.time}
+                    </span>
+                  ))}
                 </div>
                 <div className="weather-sun-pair">
                   <span>High {high} F</span>
