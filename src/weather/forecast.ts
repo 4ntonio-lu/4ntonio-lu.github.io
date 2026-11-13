@@ -137,7 +137,15 @@ export const EVEN_HOURS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22] as const;
 /** Days kept on the week list. One extra day is fetched so today can drop off after noon. */
 const VISIBLE_DAYS = 7;
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+const WEEKDAYS = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+] as const;
 
 const memory = new Map<CityId, ForecastView>();
 const inflight = new Map<CityId, Promise<ForecastView>>();

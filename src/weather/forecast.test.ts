@@ -187,13 +187,13 @@ describe('parseForecast', () => {
     expect(view.nextHours[0]).toEqual({ label: '12 PM', tempF: 76, kind: 'clear', night: false });
     expect(view.nextHours[6]).toEqual({ label: '6 PM', tempF: 77, kind: 'partly', night: true });
     expect(view.days.map(({ date, label }) => ({ date, label }))).toEqual([
-      { date: '2026-11-13', label: 'Fri' },
-      { date: '2026-11-14', label: 'Sat' },
-      { date: '2026-11-15', label: 'Sun' },
-      { date: '2026-11-16', label: 'Mon' },
-      { date: '2026-11-17', label: 'Tue' },
-      { date: '2026-11-18', label: 'Wed' },
-      { date: '2026-11-19', label: 'Thu' },
+      { date: '2026-11-13', label: 'Friday' },
+      { date: '2026-11-14', label: 'Saturday' },
+      { date: '2026-11-15', label: 'Sunday' },
+      { date: '2026-11-16', label: 'Monday' },
+      { date: '2026-11-17', label: 'Tuesday' },
+      { date: '2026-11-18', label: 'Wednesday' },
+      { date: '2026-11-19', label: 'Thursday' },
     ]);
     expect(view.days[0]).toMatchObject({
       highF: 79,

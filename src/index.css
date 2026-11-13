@@ -208,11 +208,15 @@ label {
 
 .win95-title {
   display: flex;
-  height: 22px;
+  box-sizing: border-box;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
   flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  overflow: hidden;
   background: var(--win-navy);
   padding: 2px 3px 2px 4px;
   color: #fff;
@@ -244,13 +248,9 @@ label {
   color: inherit;
   font-weight: 700;
   font-size: 1rem;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* The draft title bar is taller relative to the window than the other apps. */
-.win95-window:has(.weather) .win95-title {
-  height: 30px;
 }
 
 .caption-buttons {
@@ -261,8 +261,10 @@ label {
 
 .caption-button {
   display: inline-flex;
+  box-sizing: border-box;
   width: 16px;
   height: 14px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   margin-left: 2px;
@@ -593,6 +595,8 @@ button:focus-visible,
   flex-wrap: nowrap;
   align-items: center;
   gap: 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
 }
 
 .weather-combo {
@@ -603,7 +607,10 @@ button:focus-visible,
   display: flex;
   align-items: stretch;
   min-width: 10.25rem;
-  height: 28px;
+  height: auto;
+  min-height: 30px;
+  font-size: inherit;
+  font-weight: inherit;
   padding: 2px;
   background: var(--win-face);
   border: 2px solid #000;
@@ -666,6 +673,8 @@ button:focus-visible,
   width: 100%;
   padding: 2px 8px;
   color: #000;
+  font-size: 1.15rem;
+  font-weight: 700;
   text-align: left;
 }
 
@@ -682,10 +691,12 @@ button:focus-visible,
   gap: 2px 6px;
 }
 
+.weather-current,
+.weather-current span,
 .weather-temp,
 .weather-condition {
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .weather-condition,
@@ -697,15 +708,17 @@ button:focus-visible,
 }
 
 .weather-sun {
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1.57fr) minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
-  gap: 14px;
   margin-top: 12px;
 }
 
-.weather-sun span:nth-child(3) {
-  margin-left: 22px;
+.weather-sun-pair {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 
 .weather-columns {
@@ -769,7 +782,7 @@ button:focus-visible,
 .weather-day {
   display: grid;
   width: 100%;
-  grid-template-columns: 2.6rem minmax(3.5rem, 1fr) 24px;
+  grid-template-columns: 6.6rem minmax(0, 1fr) 24px;
   align-items: center;
   column-gap: 6px;
   min-height: 30px;
@@ -829,7 +842,8 @@ button:focus-visible,
 }
 
 @media (max-width: 767px) {
-  .weather-columns {
+  .weather-columns,
+  .weather-sun {
     grid-template-columns: 1fr;
   }
 }

@@ -44,6 +44,9 @@ const SUN_CLOUD = { width: 72, height: 53 };
 /** Plain cloud, a little under the sun-and-cloud box in the hour grid and week list. */
 const CLOUD_SCALE = 0.9;
 
+/** Rain, a little over its previous size in the hour grid and week list. */
+const RAIN_SCALE = 1.12;
+
 const CLOUD_MARKS = new Set<MarkName>(['cloudy', 'fog', 'snow']);
 
 function markName(kind: WeatherKind, night: boolean): MarkName {
@@ -58,12 +61,15 @@ function WeatherMark({
   night = false,
   size,
   shrinkCloud = false,
+  growRain = false,
 }: {
   kind: WeatherKind;
   night?: boolean;
   size: number;
   /** Hour grid and week list draw the plain cloud slightly under the sun-and-cloud size. */
   shrinkCloud?: boolean;
+  /** Hour grid and week list draw rain a little larger. The sun-and-cloud size stays put. */
+  growRain?: boolean;
 }): JSX.Element {
   const name = markName(kind, night);
   // The plain cloud is wider than the sun-and-cloud mark, so it sits in that box.
@@ -78,7 +84,10 @@ function WeatherMark({
       </span>
     );
   }
-  return <img className="weather-mark" src={MARKS[name]} alt="" height={size} draggable={false} />;
+  const height = name === 'rain' && growRain ? Math.round(size * RAIN_SCALE) : size;
+  return (
+    <img className="weather-mark" src={MARKS[name]} alt="" height={height} draggable={false} />
+  );
 }
 
 function CityControl({
@@ -168,7 +177,7 @@ function HourPanel({
         {hours.map((hour, index) => (
           <li key={`${hour.label}-${index}`} className="weather-hour">
             <span>{hour.label}</span>
-            <WeatherMark kind={hour.kind} night={hour.night} size={22} shrinkCloud />
+            <WeatherMark kind={hour.kind} night={hour.night} size={22} shrinkCloud growRain />
             <span>{hour.tempF}</span>
           </li>
         ))}
@@ -304,7 +313,7 @@ function Weather(): JSX.Element {
                               {day.highF}/{day.lowF}
                             </span>
                             <span className="weather-day-mark">
-                              <WeatherMark kind={day.kind} size={20} shrinkCloud />
+                              <WeatherMark kind={day.kind} size={20} shrinkCloud growRain />
                             </span>
                           </button>
                         </li>
@@ -314,10 +323,14 @@ function Weather(): JSX.Element {
                 </section>
               </div>
               <div className="weather-sun">
-                <span>Sunrise {sunrise}</span>
-                <span>Sunset {sunset}</span>
-                <span>High {high} F</span>
-                <span>Low {low} F</span>
+                <div className="weather-sun-pair">
+                  <span>Sunrise {sunrise}</span>
+                  <span>Sunset {sunset}</span>
+                </div>
+                <div className="weather-sun-pair">
+                  <span>High {high} F</span>
+                  <span>Low {low} F</span>
+                </div>
               </div>
             </>
           ) : (
