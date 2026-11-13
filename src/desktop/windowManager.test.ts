@@ -7,6 +7,7 @@ import {
   desktopReducer,
   initialDesktopState,
   weatherWindowOrigin,
+  narrowWindowFrame,
   type DesktopState,
 } from './windowManager';
 
@@ -138,6 +139,64 @@ describe('desktopReducer', () => {
       x: CASCADE_ORIGIN_X,
       y: CASCADE_ORIGIN_Y,
     });
+  });
+
+  it('fits weather, crypto, and stocks on a narrow desktop and leaves fullscreen alone', () => {
+    expect(
+      narrowWindowFrame({
+        appId: 'weather',
+        viewportWidth: 1280,
+        viewportHeight: 800,
+        taskbarHeight: 40,
+        widthRatio: 0.48,
+        x: 650,
+        y: 16,
+      }),
+    ).toBeNull();
+    expect(
+      narrowWindowFrame({
+        appId: 'about',
+        viewportWidth: 768,
+        viewportHeight: 800,
+        taskbarHeight: 40,
+        widthRatio: 0.33,
+        x: 216,
+        y: 16,
+      }),
+    ).toBeNull();
+    expect(
+      narrowWindowFrame({
+        appId: 'stocks',
+        viewportWidth: 768,
+        viewportHeight: 800,
+        taskbarHeight: 40,
+        widthRatio: 0.82,
+        x: 268,
+        y: 68,
+      }),
+    ).toEqual({ width: 630, x: 130, y: 68 });
+    expect(
+      narrowWindowFrame({
+        appId: 'weather',
+        viewportWidth: 768,
+        viewportHeight: 800,
+        taskbarHeight: 40,
+        widthRatio: 0.48,
+        x: 216,
+        y: 682,
+      }),
+    ).toEqual({ width: 600, x: 160, y: 332 });
+    expect(
+      narrowWindowFrame({
+        appId: 'crypto',
+        viewportWidth: 767,
+        viewportHeight: 800,
+        taskbarHeight: 52,
+        widthRatio: 0.82,
+        x: 242,
+        y: 42,
+      }),
+    ).toBeNull();
   });
 
   it('opens the requested app for a deep link and About for the site root', () => {

@@ -7,8 +7,10 @@ import {
   type RefObject,
 } from 'react';
 import Draggable from 'react-draggable';
+import useWindowDimensions from '../hooks/useWindowDimensions';
 import { appByWindowName } from '../../desktop/apps';
 import { useDesktop } from '../../desktop/useDesktop';
+import { narrowWindowFrame } from '../../desktop/windowManager';
 import { useWeatherChromeIcon } from '../../weather/selection';
 import WindowHeader from './WindowHeader';
 
@@ -27,6 +29,7 @@ function WindowBox({
   fillHeight = false,
 }: WindowBoxProps): JSX.Element | null {
   const { windows, focusedId, compact, run, dispatch } = useDesktop();
+  const { windowWidth, windowHeight } = useWindowDimensions();
   const weatherIcon = useWeatherChromeIcon();
   const nodeRef = useRef<HTMLDivElement>(null);
   const activePointer = useRef<number | null>(null);
@@ -52,6 +55,17 @@ function WindowBox({
   if (!windowState) return null;
 
   const fill = compact || windowState.maximized;
+  const frame = fill
+    ? null
+    : narrowWindowFrame({
+        appId: app.id,
+        viewportWidth: windowWidth,
+        viewportHeight: windowHeight,
+        taskbarHeight: 40,
+        widthRatio: width,
+        x: windowState.x,
+        y: windowState.y,
+      });
   const active = focusedId === app.id;
   const titleId = `window-title-${app.id}`;
 
@@ -121,7 +135,9 @@ function WindowBox({
       nodeRef={nodeRef as RefObject<HTMLElement>}
       handle=".win95-title"
       cancel=".caption-buttons"
-      position={fill ? { x: 0, y: 0 } : { x: windowState.x, y: windowState.y }}
+      position={
+        fill ? { x: 0, y: 0 } : { x: frame?.x ?? windowState.x, y: frame?.y ?? windowState.y }
+      }
       disabled={fill}
       bounds="parent"
       // react-draggable replaces the child's onMouseDown, so focus is passed here.
@@ -141,9 +157,9 @@ function WindowBox({
         className={fill ? 'win95-window window-fill' : 'win95-window'}
         style={{
           zIndex: windowState.z,
-          width: fill ? '100%' : `${width * 100}%`,
+          width: fill ? '100%' : frame ? `${frame.width}px` : `${width * 100}%`,
           height: fill ? '100%' : fillHeight ? `calc(100% - ${windowState.y}px)` : undefined,
-          maxHeight: fill || fillHeight ? undefined : `calc(100% - ${windowState.y}px)`,
+          maxHeight: fill || fillHeight ? undefined : `calc(100% - ${frame?.y ?? windowState.y}px)`,
         }}
       >
         <WindowHeader

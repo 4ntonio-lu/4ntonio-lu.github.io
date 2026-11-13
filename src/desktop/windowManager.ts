@@ -38,6 +38,50 @@ export const CASCADE_STEP = 26;
 export const WEATHER_WINDOW_WIDTH = 0.48;
 
 /**
+ * Below this, weather, crypto, and stocks are pulled fully on screen.
+ * 1280 and wider keep the fullscreen placement.
+ */
+export const NARROW_DESKTOP_MAX = 1279;
+
+const NARROW_APPS = new Set(['weather', 'crypto', 'stocks']);
+
+/** Weather's top row needs this much window width once the viewport gets narrow. */
+const NARROW_WEATHER_WIDTH = 600;
+
+/**
+ * Fit weather, crypto, and stocks inside a desktop that is wider than a phone
+ * and narrower than fullscreen. Returns null when the fullscreen or phone layout applies.
+ */
+export function narrowWindowFrame(input: {
+  appId: string;
+  viewportWidth: number;
+  viewportHeight: number;
+  taskbarHeight: number;
+  widthRatio: number;
+  x: number;
+  y: number;
+}): { width: number; x: number; y: number } | null {
+  if (input.viewportWidth <= COMPACT_MAX_WIDTH || input.viewportWidth > NARROW_DESKTOP_MAX) {
+    return null;
+  }
+  if (!NARROW_APPS.has(input.appId)) return null;
+
+  const margin = 8;
+  const maxWidth = Math.max(260, input.viewportWidth - margin * 2);
+  let width = input.widthRatio * input.viewportWidth;
+  if (input.appId === 'weather') width = Math.max(width, NARROW_WEATHER_WIDTH);
+  width = Math.round(Math.min(width, maxWidth));
+  const x = Math.max(margin, Math.min(input.x, input.viewportWidth - width - margin));
+  const available = input.viewportHeight - input.taskbarHeight;
+  const minHeight = input.appId === 'weather' ? 420 : 320;
+  let y = input.y;
+  if (y + minHeight > available - margin) {
+    y = Math.max(margin, available - minHeight - margin);
+  }
+  return { width, x, y };
+}
+
+/**
  * Weather opens beside About when the desktop is wide enough, and below it
  * otherwise, so the two windows do not stack.
  */
