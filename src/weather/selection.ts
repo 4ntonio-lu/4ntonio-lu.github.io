@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
-import dayUrl from '../assets/images/weather.png';
-import nightUrl from '../assets/images/weather-night.png';
+import dayUrl from './icons/partly.png';
+import nightUrl from './icons/cloud-moon.png';
 import { CITIES, loadForecast, type CityId } from './forecast';
 
 type State = {

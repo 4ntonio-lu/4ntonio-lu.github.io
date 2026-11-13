@@ -1,5 +1,6 @@
 import { img } from '../assets/images/img';
 import { contentImage, profile } from '../content';
+import partlyUrl from '../weather/icons/partly.png';
 
 /**
  * Desktop apps, in Start-menu order.
@@ -50,7 +51,7 @@ export const apps = [
     id: 'weather',
     title: 'Weather',
     windowName: 'Weather',
-    icon: img.weather,
+    icon: partlyUrl,
   },
 ] as const;
 
