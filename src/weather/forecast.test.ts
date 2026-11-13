@@ -165,6 +165,10 @@ describe('parseForecast', () => {
       pastNoon: true,
       sunrise: '6:54 AM',
       sunset: '5:35 PM',
+      nextHighF: 81,
+      nextLowF: 50,
+      nextSunrise: '6:54 AM',
+      nextSunset: '5:35 PM',
     });
     expect(view.nextHours.map((hour) => hour.label)).toEqual([
       '12 PM',
@@ -191,6 +195,12 @@ describe('parseForecast', () => {
       { date: '2026-11-18', label: 'Wed' },
       { date: '2026-11-19', label: 'Thu' },
     ]);
+    expect(view.days[0]).toMatchObject({
+      highF: 79,
+      lowF: 61,
+      sunrise: '6:55 AM',
+      sunset: '5:35 PM',
+    });
     expect(view.days[0].hours.map((hour) => hour.label)).toEqual(EVEN_LABELS);
     expect(view.days[0].hours[0]).toEqual({
       label: '12 AM',
@@ -221,6 +231,9 @@ describe('parseForecast', () => {
       '2026-11-18',
     ]);
     expect(view.days[0].hours.map((hour) => hour.label)).toEqual(EVEN_LABELS);
+    expect(view.days[0]).toMatchObject({ sunrise: '6:54 AM', sunset: '5:35 PM' });
+    expect(view.nextSunrise).toBe('6:54 AM');
+    expect(view.nextSunset).toBe('5:35 PM');
     expect(view.nextHours[0]).toMatchObject({ label: '10 AM', night: false });
     expect(view.nextHours[11]).toMatchObject({ label: '9 PM', night: true });
     expect(view.nextHours).toHaveLength(12);
@@ -255,6 +268,10 @@ describe('parseForecast', () => {
     expect(view.nextHours[9]).toMatchObject({ label: '6 AM', night: true });
     expect(view.nextHours[10]).toMatchObject({ label: '7 AM', night: false });
     expect(view.nextHours[11]).toEqual({ label: '8 AM', tempF: 58, kind: 'clear', night: false });
+    expect(view.nextHighF).toBe(70);
+    expect(view.nextLowF).toBe(48);
+    expect(view.nextSunrise).toBe('6:55 AM');
+    expect(view.nextSunset).toBe('5:35 PM');
     expect(view.days[0].date).toBe('2026-11-13');
   });
 

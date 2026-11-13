@@ -84,6 +84,10 @@ export type DayForecast = {
   highF: number;
   lowF: number;
   kind: WeatherKind;
+  /** Local sunrise for this calendar day, such as "6:54 AM". */
+  sunrise: string | null;
+  /** Local sunset for this calendar day, such as "5:35 PM". */
+  sunset: string | null;
   hours: HourForecast[];
 };
 
@@ -105,6 +109,18 @@ export type ForecastView = {
   pastNoon: boolean;
   /** Twelve hours starting at the current local hour, crossing midnight. */
   nextHours: HourForecast[];
+  /** Highest of the next twelve hours. */
+  nextHighF: number;
+  /** Lowest of the next twelve hours. */
+  nextLowF: number;
+  /**
+   * Sunrise for the next twelve hours. Tomorrow's sunrise when those hours cross midnight.
+   */
+  nextSunrise: string | null;
+  /**
+   * Sunset for the next twelve hours. Today's sunset when those hours cross midnight.
+   */
+  nextSunset: string | null;
   /** Today's sunrise, city local, such as "6:54 AM". */
   sunrise: string | null;
   /** Today's sunset, city local, such as "5:35 PM". */
@@ -358,6 +374,8 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
       highF: whole(high),
       lowF: whole(low),
       kind: describeCode(dayCode).kind,
+      sunrise: clockLabel(sunrise),
+      sunset: clockLabel(sunset),
       hours: hoursFor(date, EVEN_HOURS, sunrise, sunset),
     });
   }
@@ -366,6 +384,7 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
   const days = pastNoon ? built.slice(1, 1 + VISIBLE_DAYS) : built.slice(0, VISIBLE_DAYS);
   const startHour = currentHour ?? 0;
   const nextHours: HourForecast[] = [];
+  let crossesMidnight = false;
   for (let step = 0; step < PANEL_HOURS; step += 1) {
     const absolute = startHour + step;
     const offset = Math.floor(absolute / 24);
@@ -374,6 +393,7 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     if (!date) break;
     const slot = slots.get(date)?.get(hour);
     if (!slot) break;
+    if (offset > 0) crossesMidnight = true;
     const sunrise = sunrises ? asString(sunrises[offset]) : null;
     const sunset = sunsets ? asString(sunsets[offset]) : null;
     nextHours.push({
@@ -414,6 +434,10 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     today,
     pastNoon,
     nextHours,
+    nextHighF: Math.max(...nextHours.map((hour) => hour.tempF)),
+    nextLowF: Math.min(...nextHours.map((hour) => hour.tempF)),
+    nextSunrise: clockLabel(crossesMidnight ? (sunrises ? asString(sunrises[1]) : null) : sunrise),
+    nextSunset: clockLabel(sunset),
     sunrise: clockLabel(sunrise),
     sunset: clockLabel(sunset),
     days,

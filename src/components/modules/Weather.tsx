@@ -31,7 +31,10 @@ const MARKS = {
 
 type MarkName = keyof typeof MARKS;
 
-const SLOT_MARKS = new Set<MarkName>(['cloudy', 'fog', 'snow', 'cloud-moon']);
+/** The sun-and-cloud sprite. Cloudy marks are fitted to this rendered box. */
+const SUN_CLOUD = { width: 72, height: 53 };
+
+const CLOUD_MARKS = new Set<MarkName>(['cloudy', 'fog', 'snow']);
 
 function markName(kind: WeatherKind, night: boolean): MarkName {
   if (!night) return kind;
@@ -50,11 +53,12 @@ function WeatherMark({
   size: number;
 }): JSX.Element {
   const name = markName(kind, night);
-  // The draft cloud is a wide sprite. Fit it, and the cloud-with-moon, in the same
-  // box as the sun and rain instead of letting that width make them larger.
-  if (SLOT_MARKS.has(name)) {
+  // The plain cloud is wider than the sun-and-cloud mark. Fit it in that same box.
+  // The moon-cloudy sprite is already the same canvas, so a shared height matches it.
+  if (CLOUD_MARKS.has(name)) {
+    const width = Math.round((size * SUN_CLOUD.width) / SUN_CLOUD.height);
     return (
-      <span className="weather-mark-slot" style={{ width: size, height: size }}>
+      <span className="weather-mark-slot" style={{ width, height: size }}>
         <img className="weather-mark" src={MARKS[name]} alt="" draggable={false} />
       </span>
     );
@@ -214,36 +218,36 @@ function Weather(): JSX.Element {
           <div className="weather-top">
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
-              <div className="weather-now">
-                <WeatherMark kind={view.kind} night={view.night} size={32} />
-                <span className="weather-temp">{view.tempF} F</span>
-                <span className="weather-condition">{view.condition}</span>
-              </div>
+              <fieldset className="weather-now">
+                <legend>Now</legend>
+                <div className="weather-now-line">
+                  <WeatherMark kind={view.kind} night={view.night} size={32} />
+                  <span className="weather-temp">{view.tempF} F</span>
+                  <span className="weather-condition">{view.condition}</span>
+                </div>
+                <div className="weather-now-line">
+                  <span>Feels like {view.feelsLikeF} F</span>
+                  <span>Wind {view.windMph} mph</span>
+                  <span>Humidity {view.humidity}%</span>
+                </div>
+              </fieldset>
             )}
             {view && (
               <div className="weather-corner">
-                {active === 'next' && view.sunrise && view.sunset ? (
-                  <>
-                    <span>Sunrise {view.sunrise}</span>
-                    <span>Sunset {view.sunset}</span>
-                  </>
-                ) : (
-                  <>
-                    <span>High {selectedDay?.highF ?? view.highF} F</span>
-                    <span>Low {selectedDay?.lowF ?? view.lowF} F</span>
-                  </>
-                )}
+                <div className="weather-corner-row">
+                  <span>High {active === 'next' ? view.nextHighF : selectedDay?.highF} F</span>
+                  <span>Low {active === 'next' ? view.nextLowF : selectedDay?.lowF} F</span>
+                </div>
+                <div className="weather-corner-row">
+                  <span>Sunrise {active === 'next' ? view.nextSunrise : selectedDay?.sunrise}</span>
+                  <span>Sunset {active === 'next' ? view.nextSunset : selectedDay?.sunset}</span>
+                </div>
               </div>
             )}
           </div>
 
           {view ? (
             <>
-              <div className="weather-stats">
-                <span>Feels like {view.feelsLikeF} F</span>
-                <span>Wind {view.windMph} mph</span>
-                <span>Humidity {view.humidity}%</span>
-              </div>
               <div className="weather-columns">
                 <HourPanel heading={heading} hours={hours} />
                 <section className="weather-panel" aria-label="Week">
