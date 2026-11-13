@@ -74,13 +74,17 @@ export type HourForecast = {
   label: string;
   tempF: number;
   kind: WeatherKind;
+  /** True when this hour is before sunrise or after sunset in the city. */
+  night: boolean;
 };
 
 export type DayForecast = {
+  date: string;
   label: string;
   highF: number;
   lowF: number;
   kind: WeatherKind;
+  hours: HourForecast[];
 };
 
 export type ForecastView = {
@@ -88,16 +92,36 @@ export type ForecastView = {
   tempF: number;
   condition: string;
   kind: WeatherKind;
+  /** True when the current local time is before sunrise or after sunset. */
+  night: boolean;
   highF: number;
   lowF: number;
   windMph: number;
   humidity: number;
-  hours: HourForecast[];
   days: DayForecast[];
 };
 
-/** Daytime hours shown in the Today panel. The API returns the city's local time. */
-const TODAY_HOURS = [9, 12, 15, 18, 21] as const;
+/** Hours shown in the left panel. */
+export const PANEL_HOURS = 12;
+
+/** A later day opens at 8 AM and runs through 7 PM. */
+const LATER_DAY_START = 8;
+
+/**
+ * Twelve hours from the current local hour through the rest of that hour block.
+ * When fewer than twelve hours are left in the day, the panel is the day's last twelve.
+ */
+export function todayHourWindow(currentHour: number): number[] {
+  const hour = Math.min(23, Math.max(0, Math.floor(currentHour)));
+  const remaining = 24 - hour;
+  const start = remaining < PANEL_HOURS ? 24 - PANEL_HOURS : hour;
+  return Array.from({ length: PANEL_HOURS }, (_, index) => start + index);
+}
+
+/** Twelve hours spread across a day that is not today. */
+export function laterDayHourWindow(): number[] {
+  return Array.from({ length: PANEL_HOURS }, (_, index) => LATER_DAY_START + index);
+}
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
@@ -120,7 +144,7 @@ export function forecastUrl(city: City): string {
     longitude: String(city.longitude),
     current: 'temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m',
     hourly: 'temperature_2m,weather_code',
-    daily: 'weather_code,temperature_2m_max,temperature_2m_min',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset',
     temperature_unit: 'fahrenheit',
     wind_speed_unit: 'mph',
     timezone: city.timeZone,
@@ -172,6 +196,28 @@ function hourOf(stamp: string): number | null {
   if (!match) return null;
   const hour = Number(match[1]);
   return hour >= 0 && hour <= 23 ? hour : null;
+}
+
+function minutesOf(stamp: string): number | null {
+  const match = /T(\d{2}):(\d{2})/.exec(stamp);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function hourLabel(hour: number): string {
+  const suffix = hour < 12 ? 'AM' : 'PM';
+  const clock = hour % 12 || 12;
+  return `${clock} ${suffix}`;
+}
+
+/** Open-Meteo sunrise and sunset are local to the requested city. */
+function isNight(stamp: string, sunrise: string | null, sunset: string | null): boolean {
+  if (!sunrise || !sunset) return false;
+  const minutes = minutesOf(stamp);
+  const rise = minutesOf(sunrise);
+  const set = minutesOf(sunset);
+  if (minutes == null || rise == null || set == null) return false;
+  return minutes < rise || minutes >= set;
 }
 
 function dayOf(stamp: string): string | null {
@@ -228,26 +274,48 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     throw new Error('Bad forecast');
   }
 
-  const byHour = new Map<number, { tempF: number; kind: WeatherKind }>();
+  const sunrises = series(daily, 'sunrise');
+  const sunsets = series(daily, 'sunset');
+  const slots = new Map<string, Map<number, { tempF: number; kind: WeatherKind }>>();
   const count = Math.min(times.length, hourTemps.length, hourCodes.length);
   for (let index = 0; index < count; index += 1) {
     const stamp = asString(times[index]);
     const hourTemp = asNumber(hourTemps[index]);
     const hourCode = asNumber(hourCodes[index]);
     if (!stamp || hourTemp == null || hourCode == null) continue;
-    if (dayOf(stamp) !== today) continue;
+    const date = dayOf(stamp);
     const hour = hourOf(stamp);
-    if (hour == null || !TODAY_HOURS.includes(hour as (typeof TODAY_HOURS)[number])) continue;
-    byHour.set(hour, { tempF: whole(hourTemp), kind: describeCode(hourCode).kind });
+    if (!date || hour == null) continue;
+    const daySlots = slots.get(date) ?? new Map();
+    daySlots.set(hour, { tempF: whole(hourTemp), kind: describeCode(hourCode).kind });
+    slots.set(date, daySlots);
   }
 
-  const hours: HourForecast[] = TODAY_HOURS.flatMap((hour) => {
-    const slot = byHour.get(hour);
-    if (!slot) return [];
-    const suffix = hour < 12 ? 'AM' : 'PM';
-    const clock = hour % 12 || 12;
-    return [{ label: `${clock} ${suffix}`, tempF: slot.tempF, kind: slot.kind }];
-  });
+  const currentStamp = asString(current?.time);
+  const currentHour = currentStamp && dayOf(currentStamp) === today ? hourOf(currentStamp) : 0;
+  const todayWindow = todayHourWindow(currentHour ?? 0);
+
+  const hoursFor = (
+    date: string,
+    wanted: number[],
+    sunrise: string | null,
+    sunset: string | null,
+  ): HourForecast[] => {
+    const daySlots = slots.get(date);
+    if (!daySlots) return [];
+    return wanted.flatMap((hour) => {
+      const slot = daySlots.get(hour);
+      if (!slot) return [];
+      return [
+        {
+          label: hourLabel(hour),
+          tempF: slot.tempF,
+          kind: slot.kind,
+          night: isNight(`${date}T${String(hour).padStart(2, '0')}:00`, sunrise, sunset),
+        },
+      ];
+    });
+  };
 
   const days: DayForecast[] = [];
   const dayCount = Math.min(dates.length, highs.length, lows.length, dayCodes.length, 7);
@@ -259,31 +327,43 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     if (!date || high == null || low == null || dayCode == null) continue;
     const label = weekdayLabel(date);
     if (!label) continue;
+    const sunrise = sunrises ? asString(sunrises[index]) : null;
+    const sunset = sunsets ? asString(sunsets[index]) : null;
+    const wanted = days.length === 0 ? todayWindow : laterDayHourWindow();
     days.push({
+      date,
       label,
       highF: whole(high),
       lowF: whole(low),
       kind: describeCode(dayCode).kind,
+      hours: hoursFor(date, wanted, sunrise, sunset),
     });
   }
 
-  if (hours.length === 0 || days.length === 0) throw new Error('Bad forecast');
+  const todayHours = days[0]?.date === today ? days[0].hours : [];
+  if (todayHours.length !== PANEL_HOURS || days.length === 0) throw new Error('Bad forecast');
 
   const todayHigh = asNumber(highs[0]);
   const todayLow = asNumber(lows[0]);
   if (todayHigh == null || todayLow == null) throw new Error('Bad forecast');
 
+  const sunrise = sunrises ? asString(sunrises[0]) : null;
+  const sunset = sunsets ? asString(sunsets[0]) : null;
+  const nowStamp =
+    currentStamp && dayOf(currentStamp) === today
+      ? currentStamp
+      : `${today}T${String(currentHour ?? 0).padStart(2, '0')}:00`;
   const condition = describeCode(code);
   return {
     cityId: city.id,
     tempF: whole(temp),
     condition: condition.label,
     kind: condition.kind,
+    night: isNight(nowStamp, sunrise, sunset),
     highF: whole(todayHigh),
     lowF: whole(todayLow),
     windMph: whole(wind),
     humidity: whole(humidity),
-    hours,
     days,
   };
 }

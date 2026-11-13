@@ -13,9 +13,11 @@ import sunUrl from '../../weather/icons/sun.png';
 import partlyUrl from '../../weather/icons/partly.png';
 import cloudUrl from '../../weather/icons/cloud.png';
 import rainUrl from '../../weather/icons/rain.png';
+import moonUrl from '../../weather/icons/moon.png';
+import cloudMoonUrl from '../../weather/icons/cloud-moon.png';
 
-/** Marks cropped from the weather draft. Conditions the draft does not draw reuse the closest one. */
-const MARKS: Record<WeatherKind, string> = {
+/** Marks cropped from the weather draft. Night marks are drawn in that same small pixel style. */
+const MARKS = {
   clear: sunUrl,
   partly: partlyUrl,
   cloudy: cloudUrl,
@@ -23,21 +25,41 @@ const MARKS: Record<WeatherKind, string> = {
   rain: rainUrl,
   snow: cloudUrl,
   storm: rainUrl,
-};
+  moon: moonUrl,
+  'cloud-moon': cloudMoonUrl,
+} as const;
 
-const CLOUD_KINDS = new Set<WeatherKind>(['cloudy', 'fog', 'snow']);
+type MarkName = keyof typeof MARKS;
 
-function WeatherMark({ kind, size }: { kind: WeatherKind; size: number }): JSX.Element {
-  // The draft cloud is a wide sprite. Fit it in the same box as the sun and rain
-  // instead of letting that width make it larger.
-  if (CLOUD_KINDS.has(kind)) {
+const SLOT_MARKS = new Set<MarkName>(['cloudy', 'fog', 'snow', 'cloud-moon']);
+
+function markName(kind: WeatherKind, night: boolean): MarkName {
+  if (!night) return kind;
+  if (kind === 'clear') return 'moon';
+  if (kind === 'rain' || kind === 'storm') return 'rain';
+  return 'cloud-moon';
+}
+
+function WeatherMark({
+  kind,
+  night = false,
+  size,
+}: {
+  kind: WeatherKind;
+  night?: boolean;
+  size: number;
+}): JSX.Element {
+  const name = markName(kind, night);
+  // The draft cloud is a wide sprite. Fit it, and the cloud-with-moon, in the same
+  // box as the sun and rain instead of letting that width make them larger.
+  if (SLOT_MARKS.has(name)) {
     return (
       <span className="weather-mark-slot" style={{ width: size, height: size }}>
-        <img className="weather-mark" src={MARKS[kind]} alt="" draggable={false} />
+        <img className="weather-mark" src={MARKS[name]} alt="" draggable={false} />
       </span>
     );
   }
-  return <img className="weather-mark" src={MARKS[kind]} alt="" height={size} draggable={false} />;
+  return <img className="weather-mark" src={MARKS[name]} alt="" height={size} draggable={false} />;
 }
 
 function CityControl({
@@ -105,10 +127,30 @@ function CityControl({
   );
 }
 
+function HourPanel({ view, dayIndex }: { view: ForecastView; dayIndex: number }): JSX.Element {
+  const day = view.days[dayIndex] ?? view.days[0];
+  const heading = dayIndex === 0 ? 'Today' : day.label;
+  return (
+    <section className="weather-panel" aria-label={heading}>
+      <h2>{heading}</h2>
+      <ul className="weather-hours">
+        {day.hours.map((hour) => (
+          <li key={`${day.date}-${hour.label}`} className="weather-hour">
+            <span>{hour.label}</span>
+            <WeatherMark kind={hour.kind} night={hour.night} size={22} />
+            <span>{hour.tempF}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Weather(): JSX.Element {
   const [cityId, setCityId] = useState<CityId>(CITIES[0].id);
   const [view, setView] = useState<ForecastView | null>(() => readForecast(CITIES[0].id));
   const [failedId, setFailedId] = useState<CityId | null>(null);
+  const [dayIndex, setDayIndex] = useState(0);
 
   useEffect(() => {
     if (readForecast(cityId)) return;
@@ -133,6 +175,7 @@ function Weather(): JSX.Element {
 
   const choose = (next: CityId) => {
     setCityId(next);
+    setDayIndex(0);
     const cached = readForecast(next);
     setView(cached);
     setFailedId(null);
@@ -150,7 +193,7 @@ function Weather(): JSX.Element {
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
               <div className="weather-now">
-                <WeatherMark kind={view.kind} size={32} />
+                <WeatherMark kind={view.kind} night={view.night} size={32} />
                 <span className="weather-temp">{view.tempF} F</span>
                 <span className="weather-condition">{view.condition}</span>
               </div>
@@ -166,35 +209,31 @@ function Weather(): JSX.Element {
                 <span>Humidity {view.humidity}%</span>
               </div>
               <div className="weather-columns">
-                <section className="weather-panel" aria-label="Today">
-                  <h2>Today</h2>
-                  <ul className="weather-hours">
-                    {view.hours.map((hour) => (
-                      <li key={hour.label} className="weather-hour">
-                        <span>{hour.label}</span>
-                        <WeatherMark kind={hour.kind} size={26} />
-                        <span>{hour.tempF}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
+                <HourPanel view={view} dayIndex={dayIndex} />
                 <section className="weather-panel" aria-label="Week">
                   <h2>Week</h2>
                   <ul className="weather-days">
-                    {view.days.map((day, index) => (
-                      <li
-                        key={day.label}
-                        className={index === 0 ? 'weather-day is-today' : 'weather-day'}
-                      >
-                        <span>{day.label}</span>
-                        <span className="weather-day-temps">
-                          {day.highF}/{day.lowF}
-                        </span>
-                        <span className="weather-day-mark">
-                          <WeatherMark kind={day.kind} size={20} />
-                        </span>
-                      </li>
-                    ))}
+                    {view.days.map((day, index) => {
+                      const selected = index === dayIndex;
+                      return (
+                        <li key={day.date}>
+                          <button
+                            type="button"
+                            className={selected ? 'weather-day is-selected' : 'weather-day'}
+                            aria-pressed={selected}
+                            onClick={() => setDayIndex(index)}
+                          >
+                            <span>{day.label}</span>
+                            <span className="weather-day-temps">
+                              {day.highF}/{day.lowF}
+                            </span>
+                            <span className="weather-day-mark">
+                              <WeatherMark kind={day.kind} size={20} />
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </section>
               </div>
