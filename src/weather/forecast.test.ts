@@ -6,6 +6,7 @@ import {
   loadForecast,
   parseForecast,
   readForecast,
+  dayHeading,
   type City,
 } from './forecast';
 
@@ -143,6 +144,14 @@ describe('cities', () => {
     expect(austin).not.toMatch(/api[_-]?key|apikey|(?:^|[?&])key=/i);
     expect(forecastUrl(city('honolulu'))).toContain('timezone=Pacific%2FHonolulu');
     expect(forecastUrl(city('honolulu'))).toContain('latitude=21.3069');
+  });
+});
+
+describe('dayHeading', () => {
+  it('puts the weekday and month/day on the hourly header, including today', () => {
+    expect(dayHeading('Friday', '2026-11-13')).toBe('Friday 11/13');
+    expect(dayHeading('Saturday', '2026-11-14')).toBe('Saturday 11/14');
+    expect(dayHeading('Thursday', '2026-01-05')).toBe('Thursday 1/5');
   });
 });
 

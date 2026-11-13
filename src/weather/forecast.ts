@@ -301,6 +301,13 @@ function weekdayLabel(isoDate: string): string {
   return WEEKDAYS[date.getUTCDay()];
 }
 
+/** Hourly header for a selected day, such as "Friday 11/13". */
+export function dayHeading(label: string, isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return label;
+  return `${label} ${Number(match[2])}/${Number(match[3])}`;
+}
+
 function series(record: Record<string, unknown> | null, key: string): unknown[] | null {
   if (!record) return null;
   const value = record[key];

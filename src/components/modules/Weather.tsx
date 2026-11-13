@@ -5,6 +5,7 @@ import {
   CITIES,
   loadForecast,
   readForecast,
+  dayHeading,
   type CityId,
   type ForecastView,
   type WeatherKind,
@@ -281,13 +282,10 @@ function Weather(): JSX.Element {
   const failed = !view && failedId === cityId;
   const active = view ? resolvedChoice(view, choice) : 'next';
   const selectedDay = view && typeof active === 'number' ? view.days[active] : null;
-  const heading = !view
-    ? 'Today'
-    : active === 'next'
+  const heading =
+    active === 'next' || !selectedDay
       ? 'Next 12 hours'
-      : selectedDay && selectedDay.date === view.today
-        ? 'Today'
-        : (selectedDay?.label ?? 'Today');
+      : dayHeading(selectedDay.label, selectedDay.date);
   const hours = view ? (active === 'next' ? view.nextHours : (selectedDay?.hours ?? [])) : [];
   const high = view ? (active === 'next' ? view.nextHighF : selectedDay?.highF) : null;
   const low = view ? (active === 'next' ? view.nextLowF : selectedDay?.lowF) : null;
