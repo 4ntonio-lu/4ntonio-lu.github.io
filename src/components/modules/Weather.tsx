@@ -177,7 +177,8 @@ function fitCurrentText(row: HTMLElement) {
     condition.style.fontSize = value;
     const space = `${gap}px`;
     row.style.columnGap = space;
-    if (top) top.style.gap = space;
+    if (top && getComputedStyle(top).flexDirection !== 'column') top.style.gap = space;
+    else if (top) top.style.gap = '';
   };
   // The row shrinks to the space beside the city menu, and the items paint past that box.
   const edge = () => (row.lastElementChild ?? row).getBoundingClientRect().right;
@@ -242,6 +243,7 @@ function Weather(): JSX.Element {
     fit();
     const observer = new ResizeObserver(fit);
     observer.observe(body);
+    row.querySelectorAll('img').forEach((img) => observer.observe(img));
     return () => observer.disconnect();
   });
 

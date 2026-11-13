@@ -885,6 +885,16 @@ button:focus-visible,
   .weather-sun {
     grid-template-columns: 1fr;
   }
+
+  .weather-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .weather-current {
+    align-self: stretch;
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 600px) {
