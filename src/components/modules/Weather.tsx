@@ -171,7 +171,7 @@ function HourPanel({
   hours: ForecastView['nextHours'];
 }): JSX.Element {
   return (
-    <section className="weather-panel" aria-label={heading}>
+    <section className="weather-panel weather-hours-panel" aria-label={heading}>
       <h2>{heading}</h2>
       <ul className="weather-hours">
         {hours.map((hour, index) => (
