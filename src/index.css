@@ -589,27 +589,10 @@ button:focus-visible,
 }
 
 .weather-top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'city corner'
-    'current current';
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  column-gap: 16px;
-  row-gap: 8px;
-}
-
-.weather-top .weather-combo {
-  grid-area: city;
-  justify-self: start;
-}
-
-.weather-top .weather-current {
-  grid-area: current;
-}
-
-.weather-top .weather-corner {
-  grid-area: corner;
+  gap: 10px;
 }
 
 .weather-combo {
@@ -619,7 +602,7 @@ button:focus-visible,
 .weather-combo-face {
   display: flex;
   align-items: stretch;
-  min-width: 11.5rem;
+  min-width: 10.25rem;
   height: 28px;
   padding: 2px;
   background: var(--win-face);
@@ -694,14 +677,14 @@ button:focus-visible,
 .weather-current {
   display: flex;
   min-width: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 4px 14px;
+  gap: 2px 6px;
 }
 
 .weather-temp,
 .weather-condition {
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   font-weight: 700;
 }
 
@@ -709,17 +692,20 @@ button:focus-visible,
 .weather-temp,
 .weather-hour,
 .weather-current span,
-.weather-corner span {
+.weather-sun span {
   white-space: nowrap;
 }
 
-.weather-corner {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-self: end;
-  align-content: center;
-  column-gap: 16px;
-  row-gap: 2px;
+.weather-sun {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.weather-sun span:nth-child(3) {
+  margin-left: 22px;
 }
 
 .weather-columns {

@@ -38,8 +38,11 @@ const MARKS = {
 
 type MarkName = keyof typeof MARKS;
 
-/** The sun-and-cloud sprite. Cloudy marks are fitted to this rendered box. */
+/** The sun-and-cloud sprite. Its rendered size stays put. */
 const SUN_CLOUD = { width: 72, height: 53 };
+
+/** Plain cloud, a little under the sun-and-cloud box in the hour grid and week list. */
+const CLOUD_SCALE = 0.9;
 
 const CLOUD_MARKS = new Set<MarkName>(['cloudy', 'fog', 'snow']);
 
@@ -54,18 +57,23 @@ function WeatherMark({
   kind,
   night = false,
   size,
+  shrinkCloud = false,
 }: {
   kind: WeatherKind;
   night?: boolean;
   size: number;
+  /** Hour grid and week list draw the plain cloud slightly under the sun-and-cloud size. */
+  shrinkCloud?: boolean;
 }): JSX.Element {
   const name = markName(kind, night);
-  // The plain cloud is wider than the sun-and-cloud mark. Fit it in that same box.
+  // The plain cloud is wider than the sun-and-cloud mark, so it sits in that box.
   // The moon-cloudy sprite is already the same canvas, so a shared height matches it.
   if (CLOUD_MARKS.has(name)) {
-    const width = Math.round((size * SUN_CLOUD.width) / SUN_CLOUD.height);
+    const scale = shrinkCloud ? CLOUD_SCALE : 1;
+    const width = Math.round(((size * SUN_CLOUD.width) / SUN_CLOUD.height) * scale);
+    const height = Math.round(size * scale);
     return (
-      <span className="weather-mark-slot" style={{ width, height: size }}>
+      <span className="weather-mark-slot" style={{ width, height }}>
         <img className="weather-mark" src={MARKS[name]} alt="" draggable={false} />
       </span>
     );
@@ -160,7 +168,7 @@ function HourPanel({
         {hours.map((hour, index) => (
           <li key={`${hour.label}-${index}`} className="weather-hour">
             <span>{hour.label}</span>
-            <WeatherMark kind={hour.kind} night={hour.night} size={22} />
+            <WeatherMark kind={hour.kind} night={hour.night} size={22} shrinkCloud />
             <span>{hour.tempF}</span>
           </li>
         ))}
@@ -250,20 +258,12 @@ function Weather(): JSX.Element {
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
               <div className="weather-current">
-                <WeatherMark kind={view.kind} night={view.night} size={32} />
+                <WeatherMark kind={view.kind} night={view.night} size={24} />
                 <span className="weather-temp">{view.tempF} F</span>
                 <span className="weather-condition">{view.condition}</span>
                 <span>Feels like {view.feelsLikeF} F</span>
                 <span>Wind {view.windMph} mph</span>
                 <span>Humidity {view.humidity}%</span>
-              </div>
-            )}
-            {view && (
-              <div className="weather-corner">
-                <span>High {high} F</span>
-                <span>Sunrise {sunrise}</span>
-                <span>Low {low} F</span>
-                <span>Sunset {sunset}</span>
               </div>
             )}
           </div>
@@ -304,7 +304,7 @@ function Weather(): JSX.Element {
                               {day.highF}/{day.lowF}
                             </span>
                             <span className="weather-day-mark">
-                              <WeatherMark kind={day.kind} size={20} />
+                              <WeatherMark kind={day.kind} size={20} shrinkCloud />
                             </span>
                           </button>
                         </li>
@@ -312,6 +312,12 @@ function Weather(): JSX.Element {
                     })}
                   </ul>
                 </section>
+              </div>
+              <div className="weather-sun">
+                <span>Sunrise {sunrise}</span>
+                <span>Sunset {sunset}</span>
+                <span>High {high} F</span>
+                <span>Low {low} F</span>
               </div>
             </>
           ) : (
