@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type JSX } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type JSX } from 'react';
 import WindowBox from '../elements/WindowBox';
 import { WEATHER_WINDOW_WIDTH } from '../../desktop/windowManager';
 import {
@@ -155,6 +155,28 @@ function CityControl({
   );
 }
 
+const CURRENT_TEXT = 32;
+
+/** Temperature and condition share one size, matching the icon unless a long label would leave the window. */
+function fitCurrentText(row: HTMLElement) {
+  const box = row.closest('.weather');
+  const temp = row.querySelector<HTMLElement>('.weather-temp');
+  const condition = row.querySelector<HTMLElement>('.weather-condition');
+  if (!box || !temp || !condition) return;
+  const limit = box.getBoundingClientRect().right - 1;
+  let size = CURRENT_TEXT;
+  const apply = (px: number) => {
+    const value = `${px}px`;
+    temp.style.fontSize = value;
+    condition.style.fontSize = value;
+  };
+  apply(size);
+  while (size > 22 && row.getBoundingClientRect().right > limit) {
+    size -= 0.5;
+    apply(size);
+  }
+}
+
 type Choice = 'next' | number;
 
 function resolvedChoice(view: ForecastView, choice: Choice | null): Choice {
@@ -194,6 +216,19 @@ function Weather(): JSX.Element {
   const [failedId, setFailedId] = useState<CityId | null>(null);
   const [choice, setChoice] = useState<Choice | null>(null);
   const picked = useRef(false);
+  const currentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const row = currentRef.current;
+    if (!row) return;
+    const box = row.closest('.weather');
+    if (!box) return;
+    const fit = () => fitCurrentText(row);
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(box);
+    return () => observer.disconnect();
+  });
 
   useEffect(() => {
     let active = true;
@@ -274,7 +309,7 @@ function Weather(): JSX.Element {
           <div className="weather-top">
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
-              <div className="weather-current">
+              <div className="weather-current" ref={currentRef}>
                 <WeatherMark kind={view.kind} night={view.night} size={32} />
                 <span className="weather-temp">{view.tempF} F</span>
                 <span className="weather-condition">{view.condition}</span>
