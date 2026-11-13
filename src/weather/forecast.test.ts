@@ -33,12 +33,14 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
   const time: string[] = [];
   const temperature_2m: number[] = [];
   const weather_code: number[] = [];
+  const uv_index: Array<number | null> = [];
   for (let day = 12; day <= 19; day += 1) {
     for (let hour = 0; hour < 24; hour += 1) {
       const special = day === 12 ? thursday[hour] : day === 13 ? friday[hour] : undefined;
       time.push(`2026-11-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00`);
       temperature_2m.push(special?.temp ?? 50);
       weather_code.push(special?.code ?? 3);
+      uv_index.push(day === 12 && hour === 12 ? 4.6 : day === 12 && hour === 21 ? 0 : 1);
     }
   }
 
@@ -51,7 +53,7 @@ function samplePayload(currentTime = '2026-11-12T12:15') {
       weather_code: 2,
       wind_speed_10m: 8.4,
     },
-    hourly: { time, temperature_2m, weather_code },
+    hourly: { time, temperature_2m, weather_code, uv_index },
     daily: {
       time: [
         '2026-11-12',
@@ -139,6 +141,7 @@ describe('cities', () => {
     expect(austin).toContain('timezone=America%2FChicago');
     expect(austin).toContain('forecast_days=8');
     expect(austin).toContain('apparent_temperature');
+    expect(austin).toContain('uv_index');
     expect(austin).toContain('sunrise');
     expect(austin).toContain('sunset');
     expect(austin).not.toMatch(/api[_-]?key|apikey|(?:^|[?&])key=/i);
@@ -170,6 +173,7 @@ describe('parseForecast', () => {
       lowF: 63,
       windMph: 8,
       humidity: 48,
+      uvIndex: 5,
       today: '2026-11-12',
       pastNoon: true,
       sunrise: '6:54 AM',
@@ -314,6 +318,25 @@ describe('parseForecast', () => {
       { name: 'Sunset', time: '5:35 PM' },
       { name: 'Sunrise', time: '6:55 AM' },
     ]);
+  });
+
+  it('reads the UV index for the current local hour', () => {
+    const noon = parseForecast(city('austin'), samplePayload('2026-11-12T12:15'));
+    expect(noon.uvIndex).toBe(5);
+
+    const evening = parseForecast(city('austin'), samplePayload('2026-11-12T21:10'));
+    expect(evening.uvIndex).toBe(0);
+
+    const payload = samplePayload('2026-11-12T12:15');
+    const noonIndex = payload.hourly.time.indexOf('2026-11-12T12:00');
+    payload.hourly.uv_index[noonIndex] = null;
+    expect(parseForecast(city('austin'), payload).uvIndex).toBeNull();
+
+    const { time, temperature_2m, weather_code } = payload.hourly;
+    expect(
+      parseForecast(city('austin'), { ...payload, hourly: { time, temperature_2m, weather_code } })
+        .uvIndex,
+    ).toBeNull();
   });
 
   it('rejects a payload that cannot fill the window', () => {

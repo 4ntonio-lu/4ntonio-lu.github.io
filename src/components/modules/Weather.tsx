@@ -325,6 +325,12 @@ function Weather(): JSX.Element {
                   <span className="weather-stat-label">Humidity</span>
                   <span className="weather-stat-value">{view.humidity}%</span>
                 </span>
+                {view.uvIndex != null && (
+                  <span className="weather-stat">
+                    <span className="weather-stat-label">UV Index</span>
+                    <span className="weather-stat-value">{view.uvIndex}</span>
+                  </span>
+                )}
               </div>
             )}
           </div>

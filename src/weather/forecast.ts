@@ -108,6 +108,8 @@ export type ForecastView = {
   windMph: number;
   humidity: number;
   feelsLikeF: number;
+  /** UV index for the current local hour, or null when Open-Meteo left it out. */
+  uvIndex: number | null;
   /** City-local calendar day of the forecast's current time. */
   today: string;
   /** True after 12:00 in the city. Noon itself still counts as morning. */
@@ -168,7 +170,7 @@ export function forecastUrl(city: City): string {
     latitude: String(city.latitude),
     longitude: String(city.longitude),
     current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m',
-    hourly: 'temperature_2m,weather_code',
+    hourly: 'temperature_2m,weather_code,uv_index',
     daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset',
     temperature_unit: 'fahrenheit',
     wind_speed_unit: 'mph',
@@ -312,6 +314,19 @@ function series(record: Record<string, unknown> | null, key: string): unknown[] 
   if (!record) return null;
   const value = record[key];
   return Array.isArray(value) ? value : null;
+}
+
+/** UV for one local hour. A missing series or a null slot stays missing. */
+function hourUv(times: unknown[], uv: unknown[] | null, date: string, hour: number): number | null {
+  if (!uv) return null;
+  const count = Math.min(times.length, uv.length);
+  for (let index = 0; index < count; index += 1) {
+    const stamp = asString(times[index]);
+    if (!stamp || dayOf(stamp) !== date || hourOf(stamp) !== hour) continue;
+    const value = asNumber(uv[index]);
+    return value == null ? null : whole(value);
+  }
+  return null;
 }
 
 export function parseForecast(city: City, payload: unknown): ForecastView {
@@ -473,6 +488,7 @@ export function parseForecast(city: City, payload: unknown): ForecastView {
     windMph: whole(wind),
     humidity: whole(humidity),
     feelsLikeF: whole(feels),
+    uvIndex: hourUv(times, series(hourly, 'uv_index'), today, startHour),
     today,
     pastNoon,
     nextHours,
