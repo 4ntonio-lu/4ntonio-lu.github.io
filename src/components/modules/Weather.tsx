@@ -160,23 +160,35 @@ function CityControl({
 
 const CURRENT_TEXT = 32;
 
-/** Temperature and condition share one size, matching the icon unless a long label would leave the window. */
+const MIN_TEXT = 22;
+const MAX_GAP = 13;
+const MIN_GAP = 4;
+
+/** Temperature and condition share one size, matching the icon unless the row would leave the window. */
 function fitCurrentText(row: HTMLElement) {
-  const box = row.closest('.weather');
+  const body = row.closest<HTMLElement>('.win95-body');
+  const top = row.closest<HTMLElement>('.weather-top');
   const temp = row.querySelector<HTMLElement>('.weather-temp');
   const condition = row.querySelector<HTMLElement>('.weather-condition');
-  if (!box || !temp || !condition) return;
-  const limit = box.getBoundingClientRect().right - 1;
-  let size = CURRENT_TEXT;
-  const apply = (px: number) => {
+  if (!body || !temp || !condition) return;
+  const apply = (px: number, gap: number) => {
     const value = `${px}px`;
     temp.style.fontSize = value;
     condition.style.fontSize = value;
+    const space = `${gap}px`;
+    row.style.columnGap = space;
+    if (top) top.style.gap = space;
   };
-  apply(size);
-  while (size > 22 && row.getBoundingClientRect().right > limit) {
-    size -= 0.5;
-    apply(size);
+  // The row shrinks to the space beside the city menu, and the items paint past that box.
+  const edge = () => (row.lastElementChild ?? row).getBoundingClientRect().right;
+  const limit = () => body.getBoundingClientRect().left + body.clientWidth - 2;
+  let size = CURRENT_TEXT;
+  let gap = MAX_GAP;
+  apply(size, gap);
+  while (edge() > limit() && (size > MIN_TEXT || gap > MIN_GAP)) {
+    if (size > MIN_TEXT) size -= 0.5;
+    else gap -= 1;
+    apply(size, gap);
   }
 }
 
@@ -224,12 +236,12 @@ function Weather(): JSX.Element {
   useLayoutEffect(() => {
     const row = currentRef.current;
     if (!row) return;
-    const box = row.closest('.weather');
-    if (!box) return;
+    const body = row.closest('.win95-body');
+    if (!body) return;
     const fit = () => fitCurrentText(row);
     fit();
     const observer = new ResizeObserver(fit);
-    observer.observe(box);
+    observer.observe(body);
     return () => observer.disconnect();
   });
 

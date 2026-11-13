@@ -594,7 +594,7 @@ button:focus-visible,
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 18px;
+  gap: 13px;
   font-size: 1.15rem;
   font-weight: 700;
 }
@@ -693,7 +693,7 @@ button:focus-visible,
   min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 2px 18px;
+  gap: 2px 13px;
 }
 
 .weather-temp,
