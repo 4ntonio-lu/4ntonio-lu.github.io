@@ -176,9 +176,11 @@ function HourPanel({
       <ul className="weather-hours">
         {hours.map((hour, index) => (
           <li key={`${hour.label}-${index}`} className="weather-hour">
-            <span>{hour.label}</span>
-            <WeatherMark kind={hour.kind} night={hour.night} size={22} shrinkCloud growRain />
-            <span>{hour.tempF}</span>
+            <span className="weather-hour-time">{hour.label}</span>
+            <span className="weather-hour-mark">
+              <WeatherMark kind={hour.kind} night={hour.night} size={22} shrinkCloud growRain />
+            </span>
+            <span className="weather-hour-temp">{hour.tempF}</span>
           </li>
         ))}
       </ul>
@@ -267,12 +269,21 @@ function Weather(): JSX.Element {
             <CityControl cityId={cityId} onChoose={choose} />
             {view && (
               <div className="weather-current">
-                <WeatherMark kind={view.kind} night={view.night} size={24} />
+                <WeatherMark kind={view.kind} night={view.night} size={32} />
                 <span className="weather-temp">{view.tempF} F</span>
                 <span className="weather-condition">{view.condition}</span>
-                <span>Feels like {view.feelsLikeF} F</span>
-                <span>Wind {view.windMph} mph</span>
-                <span>Humidity {view.humidity}%</span>
+                <span className="weather-stat">
+                  <span className="weather-stat-label">Feels like</span>
+                  <span className="weather-stat-value">{view.feelsLikeF} F</span>
+                </span>
+                <span className="weather-stat">
+                  <span className="weather-stat-label">Wind</span>
+                  <span className="weather-stat-value">{view.windMph} mph</span>
+                </span>
+                <span className="weather-stat">
+                  <span className="weather-stat-label">Humidity</span>
+                  <span className="weather-stat-value">{view.humidity}%</span>
+                </span>
               </div>
             )}
           </div>
