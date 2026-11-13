@@ -811,12 +811,13 @@ button:focus-visible,
 .weather-day {
   display: grid;
   width: 100%;
-  grid-template-columns: 6.6rem minmax(0, 1fr) 24px;
+  grid-template-columns: 8rem minmax(0, 1fr) 24px;
   align-items: center;
   column-gap: 6px;
   min-height: 30px;
   padding: 1px 6px 1px 8px;
   color: inherit;
+  font-size: 1.15rem;
   text-align: left;
 }
 
