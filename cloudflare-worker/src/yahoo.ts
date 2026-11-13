@@ -19,6 +19,8 @@ export type EquitySeries = {
 
 export type EquityPayload = EquitySeries & {
 	intraday: EquityCandle[];
+	/** Fifteen-minute bars for about a week. Empty when that chart request fails. */
+	week: EquityCandle[];
 	/** Present when Yahoo's quote has a market cap, or shares outstanding times price. */
 	marketCap?: number;
 };
@@ -195,13 +197,22 @@ async function fetchYahooMarketCap(symbol: string): Promise<number | null> {
 	return readYahooSize(await quote.json());
 }
 
-/** Daily history plus fifteen-minute bars, so a one-day chart is one session of candles. */
+/**
+ * Daily history, fifteen-minute bars for the one-day chart, and a separate
+ * fifteen-minute week. Yahoo's public chart returns `15m` over `1wk` with no key.
+ */
 export async function fetchYahooChart(symbol: string): Promise<EquityPayload | null> {
-	const [daily, intraday, marketCap] = await Promise.all([
+	const [daily, intraday, week, marketCap] = await Promise.all([
 		fetchYahooSeries(symbol, '1d', '5y'),
 		fetchYahooSeries(symbol, '15m', '5d'),
+		fetchYahooSeries(symbol, '15m', '1wk'),
 		fetchYahooMarketCap(symbol),
 	]);
 	if (!daily) return null;
-	return { ...daily, intraday: intraday?.candles ?? [], ...(marketCap != null ? { marketCap } : {}) };
+	return {
+		...daily,
+		intraday: intraday?.candles ?? [],
+		week: week?.candles ?? [],
+		...(marketCap != null ? { marketCap } : {}),
+	};
 }

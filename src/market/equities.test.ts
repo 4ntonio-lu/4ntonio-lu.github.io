@@ -40,6 +40,8 @@ describe('equities', () => {
     expect(snapshot.candles).toHaveLength(2);
     expect(snapshot.asOf).toBe(50);
     expect(snapshot.marketCap).toBeUndefined();
+    expect(snapshot.week).toEqual([]);
+    expect(snapshot.intraday).toEqual([]);
     expect(
       parseEquityPayload(
         {
@@ -68,6 +70,7 @@ describe('equities', () => {
         { t: 2, o: 1, h: 2, l: 1, c: 2, v: 1 },
       ],
       intraday: [],
+      week: [],
       asOf: 1,
     };
     expect(equityStatRows(snapshot).some((row) => row.label === 'Market cap')).toBe(false);
@@ -96,7 +99,7 @@ describe('equities', () => {
     const snapshot = await fetchEquity('AAPL');
     expect(snapshot.price).toBe(10);
     expect(urls).toEqual([
-      'https://cloudflare-worker.4ntonio-lu.workers.dev/?type=equity&symbol=AAPL&series=3',
+      'https://cloudflare-worker.4ntonio-lu.workers.dev/?type=equity&symbol=AAPL&series=4',
     ]);
   });
 });

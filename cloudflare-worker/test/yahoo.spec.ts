@@ -86,7 +86,7 @@ describe('fetchYahooChart', () => {
 		vi.unstubAllGlobals();
 	});
 
-	it('loads daily history and fifteen-minute bars for the one-day chart', async () => {
+	it('loads daily history, the one-day session, and a fifteen-minute week', async () => {
 		const urls: string[] = [];
 		vi.stubGlobal('fetch', (input: RequestInfo) => {
 			const url = String(input);
@@ -98,15 +98,24 @@ describe('fetchYahooChart', () => {
 			if (url.includes('quoteSummary')) {
 				return Promise.resolve(Response.json({ quoteSummary: { result: [{ price: { marketCap: { raw: 5.16e12 } } }] } }));
 			}
-			const intraday = url.includes('interval=15m');
+			const week = url.includes('range=1wk');
+			const intraday = url.includes('interval=15m') && url.includes('range=5d');
 			const body = {
 				chart: {
 					result: [
 						{
-							meta: { regularMarketPrice: intraday ? 11 : 110 },
+							meta: { regularMarketPrice: week ? 15 : intraday ? 11 : 110 },
 							timestamp: [1, 2],
 							indicators: {
-								quote: [{ open: [1, 2], high: [2, 3], low: [1, 2], close: [1.5, intraday ? 11 : 110], volume: [1, 2] }],
+								quote: [
+									{
+										open: [1, 2],
+										high: [2, 3],
+										low: [1, 2],
+										close: [1.5, week ? 15 : intraday ? 11 : 110],
+										volume: [1, 2],
+									},
+								],
 							},
 						},
 					],
@@ -120,11 +129,13 @@ describe('fetchYahooChart', () => {
 		expect(urls.filter((url) => url.includes('/chart/'))).toEqual([
 			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=1d&range=5y',
 			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=15m&range=5d',
+			'https://query1.finance.yahoo.com/v8/finance/chart/AAPL?interval=15m&range=1wk',
 		]);
 		expect(urls.some((url) => url.includes('/quoteSummary/AAPL') && url.includes('modules=price'))).toBe(true);
 		expect(payload?.price).toBe(110);
 		expect(payload?.previousClose).toBe(1.5);
 		expect(payload?.marketCap).toBe(5.16e12);
 		expect(payload?.intraday.map((candle) => candle.c)).toEqual([1.5, 11]);
+		expect(payload?.week.map((candle) => candle.c)).toEqual([1.5, 15]);
 	});
 });

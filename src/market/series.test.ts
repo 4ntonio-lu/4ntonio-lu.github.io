@@ -74,11 +74,32 @@ describe('equity candles', () => {
     expect(equityCandles(daily, [], '1D').map((candle) => candle.c)).toEqual([21, 23]);
   });
 
-  it('keeps one week of daily bars and ignores the intraday session', () => {
+  it('keeps one week of daily bars until a fifteen-minute week arrives', () => {
     const week = equityCandles(daily, intraday, '1W');
     expect(week.map((candle) => candle.c)).toEqual([21, 23]);
     expect(week.map((candle) => candle.t)).toEqual([Date.UTC(2026, 5, 1), Date.UTC(2026, 5, 2)]);
     expect(equityRangeDays('1W')).toBe(7);
+
+    const fine = Array.from({ length: 10 }, (_, index) => ({
+      t: Date.UTC(2026, 10, 12, 14, 30) + index * 15 * 60_000,
+      o: 50,
+      h: 52,
+      l: 49,
+      c: 50 + index,
+      v: 1,
+    }));
+    const shown = equityCandles(daily, intraday, '1W', fine);
+    expect(shown.map((candle) => candle.c)).toEqual(fine.map((candle) => candle.c));
+    expect(equityCandles(daily, intraday, '1D', fine).map((candle) => candle.c)).toEqual([41, 43]);
+    expect(equityCandles(daily, [], '1D', fine).map((candle) => candle.c)).toEqual([21, 23]);
+
+    const stale = { ...fine[0], t: fine[0].t - 10 * DAY, c: 1 };
+    expect(
+      equityCandles(daily, intraday, '1W', [stale, ...fine]).some((candle) => candle.c === 1),
+    ).toBe(false);
+    expect(
+      equityCandles(daily, intraday, '1W', fine.slice(0, 3)).map((candle) => candle.c),
+    ).toEqual([21, 23]);
   });
 
   it('rolls a year into weeks and five years into months', () => {

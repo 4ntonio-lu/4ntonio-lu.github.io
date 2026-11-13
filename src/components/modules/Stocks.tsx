@@ -106,7 +106,7 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
           title(items) {
             const candle = candles[items[0]?.dataIndex ?? -1];
             if (!candle) return '';
-            return formatTooltipDate(candle.t, undefined, days <= 1);
+            return formatTooltipDate(candle.t, undefined, tooltipShowsTime(candles, days));
           },
           label(item) {
             const candle = candles[item.dataIndex];
@@ -138,6 +138,14 @@ function candleChartOptions(candles: Candle[], days: number): ChartOptions<'cand
       },
     },
   };
+}
+
+/** A one-day chart is a session. A fifteen-minute week needs the clock in the tooltip. */
+function tooltipShowsTime(candles: Candle[], days: number): boolean {
+  if (days <= 1) return true;
+  if (days > 7 || candles.length < 8) return false;
+  const span = candles[candles.length - 1].t - candles[0].t;
+  return span > 0 && span / (candles.length - 1) < 6 * 60 * 60 * 1000;
 }
 
 function axisDetail(days: number): 'auto' | 'day' | 'time' {
@@ -215,7 +223,9 @@ function lineChartOptions(candles: Candle[], days: number): ChartOptions<'line'>
         callbacks: {
           title(items) {
             const candle = candles[items[0]?.dataIndex ?? -1];
-            return candle ? formatTooltipDate(candle.t, undefined, days <= 1) : '';
+            return candle
+              ? formatTooltipDate(candle.t, undefined, tooltipShowsTime(candles, days))
+              : '';
           },
           label(item) {
             const index = item.dataIndex;
@@ -345,7 +355,9 @@ function Stocks(): JSX.Element {
   const equity = EQUITIES.find((item) => item.symbol === symbol) ?? EQUITIES[0];
   const snapshot = snapshots[symbol];
   const days = equityRangeDays(range);
-  const candles = snapshot ? equityCandles(snapshot.candles, snapshot.intraday, range) : [];
+  const candles = snapshot
+    ? equityCandles(snapshot.candles, snapshot.intraday, range, snapshot.week)
+    : [];
   const loading = loadingSymbol === symbol;
   const failed = failedSymbol === symbol && !snapshot;
   const dayMove = snapshot ? percentChange(snapshot.previousClose, snapshot.price) : null;

@@ -12,7 +12,7 @@ export const LINE_RANGES = [
 
 export type LineRangeId = (typeof LINE_RANGES)[number]['id'];
 
-/** Stock ranges. 1D uses intraday bars. 1W and the longer ranges use daily bars. */
+/** Stock ranges. 1D is the latest 15-minute session. 1W prefers a 15-minute week. */
 export const EQUITY_RANGES = [
   { id: '1D', label: '1D', days: 1 },
   { id: '1W', label: '1W', days: 7 },
@@ -122,17 +122,24 @@ export function aggregateCandles(candles: readonly Candle[], unit: 'week' | 'mon
 }
 
 /**
- * Candles for the selected stock range. 1D prefers the latest intraday session.
- * 1W is that week's daily bars. 1Y and 5Y are rolled up so each candle is wide enough to read.
+ * Candles for the selected stock range. 1D prefers the latest intraday session
+ * and otherwise keeps the daily fallback. 1W prefers the fifteen-minute week
+ * when that series is long enough to be a chart, and otherwise keeps the daily
+ * bars. 1Y and 5Y are rolled up so each candle is wide enough to read.
  */
 export function equityCandles(
   daily: readonly Candle[],
   intraday: readonly Candle[] | undefined,
   range: EquityRangeId,
+  week?: readonly Candle[],
 ): Candle[] {
   if (range === '1D') {
     const session = latestSession(intraday ?? []);
     if (session.length >= 2) return session;
+  }
+  if (range === '1W' && (week?.length ?? 0) >= 8) {
+    const bars = sliceByDays(week ?? [], 7, 2);
+    if (bars.length >= 2) return bars;
   }
   const days = equityRangeDays(range);
   const sliced = sliceByDays(daily, days, range === '1D' ? 1 : 2);

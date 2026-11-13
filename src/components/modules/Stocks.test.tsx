@@ -33,6 +33,7 @@ function snapshot(now: number): EquitySnapshot {
     previousClose: 105,
     marketCap: 5.16e12,
     asOf: now,
+    week: [],
     intraday: [
       { t: Date.UTC(2026, 10, 11, 14, 35), o: 100, h: 101, l: 99, c: 100, v: 10 },
       { t: Date.UTC(2026, 10, 11, 20, 0), o: 100, h: 130, l: 100, c: 120, v: 10 },
