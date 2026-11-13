@@ -594,7 +594,7 @@ button:focus-visible,
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 11px;
+  gap: 18px;
   font-size: 1.15rem;
   font-weight: 700;
 }
@@ -625,6 +625,11 @@ button:focus-visible,
   padding: 0 8px;
   background: #fff;
   color: #000;
+}
+
+.weather-combo-label span {
+  position: relative;
+  top: 2px;
 }
 
 .weather-combo-button {
@@ -688,11 +693,13 @@ button:focus-visible,
   min-width: 0;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 2px 11px;
+  gap: 2px 18px;
 }
 
 .weather-temp,
 .weather-condition {
+  position: relative;
+  top: 0.0625em;
   font-size: 2rem;
   font-weight: 700;
   line-height: 1;
@@ -700,6 +707,8 @@ button:focus-visible,
 
 .weather-stat {
   display: flex;
+  position: relative;
+  top: 2px;
   flex-direction: column;
   align-items: center;
   gap: 1px;

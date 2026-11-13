@@ -128,7 +128,9 @@ function CityControl({
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="weather-combo-label">{label}</span>
+        <span className="weather-combo-label">
+          <span>{label}</span>
+        </span>
         <span className="weather-combo-button" aria-hidden="true">
           <span className="weather-combo-caret" />
         </span>
@@ -183,7 +185,7 @@ type Choice = 'next' | number;
 function resolvedChoice(view: ForecastView, choice: Choice | null): Choice {
   if (choice === 'next') return 'next';
   if (typeof choice === 'number' && view.days[choice]) return choice;
-  return view.pastNoon ? 'next' : 0;
+  return 'next';
 }
 
 function HourPanel({
